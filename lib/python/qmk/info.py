@@ -711,7 +711,9 @@ def _extract_rules_mk(info_data, rules):
     """
     info_data['processor'] = rules.get('MCU', info_data.get('processor', 'atmega32u4'))
 
-    if info_data['processor'] in CHIBIOS_PROCESSORS:
+    if info_data['processor'] == 'SN34F280':
+        info_data.update(processor_type='arm', protocol='SONiX', platform_key='sn34', platform='SN34F28x')
+    elif info_data['processor'] in CHIBIOS_PROCESSORS:
         arm_processor_rules(info_data, rules)
 
     elif info_data['processor'] in LUFA_PROCESSORS + VUSB_PROCESSORS:

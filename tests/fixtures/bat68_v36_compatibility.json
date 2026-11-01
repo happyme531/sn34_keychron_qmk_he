@@ -1,0 +1,33 @@
+{
+  "description": "Frozen v36 compatibility contract; changing this requires an explicit migration review.",
+  "matrix_sha256": "dce675f5d55567a26975eb35d014d10cc2a4b6a7af9e022921da5e05748750c6",
+  "eeprom_banks": [
+    "0x79000",
+    "0x7b000"
+  ],
+  "eeprom_size": 7680,
+  "eeprom_version": 1,
+  "he_base": 37,
+  "he_calibration_offset": 2,
+  "he_profiles_offset": 290,
+  "he_profile_size": 860,
+  "he_curve_offset": 2870,
+  "he_controller_offset": 2878,
+  "he_size": 2879,
+  "rgb_protocol_sha256": "e50f9446f350ba4cd4c53b8f877cd46df9fdb77e4e3b05994cdde662372310c2",
+  "settings_fixture": {
+    "source_code_sha256": "c745ff8dd18dd57d0f46e853b3de79f038e7c6523b55553651d9bc97b25fc33f",
+    "bank_image_sha256": "c8e63f1da9341574c972bf0e1917f4780bf30e88cf5b298276dbad20bbe02584",
+    "bytes": 16384,
+    "A_keycode": 5,
+    "macro_0": "compat",
+    "profile": 1,
+    "rgb_hue": 77,
+    "rgb_saturation": 88,
+    "sequence": 1
+  },
+  "default_keymap_sha256": "d51c9842dddc3d2eab789a779ce10d235b4d5893f89ae4b4fcb80ee6e019e3ab",
+  "hall_defaults_sha256": "0634e3ebba5d657d58c5e180182aa05af864b8e1d337cb9b80ebee911a756d3f",
+  "rgb_layout_sha256": "eea74afcbe87722e7c70c891b24ca5e7c88eda9f9c593ff44275281da6f295a9",
+  "via_eeprom_date": "2026-10-30-00:00:00"
+}

@@ -1,0 +1,69 @@
+--- a/keyboards/keychron/common/analog_matrix/analog_matrix.h
++++ b/keyboards/keychron/common/analog_matrix/analog_matrix.h
+@@ -103,6 +103,12 @@
+ #    define AUTO_CALIB_ZERO_TRAVEL_THRESHOLD_VALUE (DEFAULT_FULL_RANGE - AUTO_CALIB_FULL_TRAVEL_JITTER_VALUE)
+ #endif
+ 
++#ifndef AUTO_CALIB_RANGE_STRONG
++#define AUTO_CALIB_RANGE_STRONG 1100
++#define AUTO_CALIB_RANGE_MEDIUM 1000
++#define AUTO_CALIB_RANGE_MINIMUM 900
++#endif
++
+ #ifndef AUTO_CALIB_VALID_RELASING_TIME
+ #    define AUTO_CALIB_VALID_RELASING_TIME 1000
+ #endif
+--- a/keyboards/keychron/common/analog_matrix/analog_matrix.c
++++ b/keyboards/keychron/common/analog_matrix/analog_matrix.c
+@@ -16,6 +16,9 @@
+ 
+ #include "quantum.h"
+ #include "analog_matrix.h"
++#ifdef ANALOG_MATRIX_PLATFORM_HEADER
++#include ANALOG_MATRIX_PLATFORM_HEADER
++#endif
+ #include "keymap_introspection.h"
+ #include "raw_hid.h"
+ #include "eeprom.h"
+@@ -141,6 +144,9 @@
+ }
+ 
+ static uint8_t convert_to_travel(uint8_t row, uint8_t col, uint16_t value) {
++#ifdef ANALOG_MATRIX_TRAVEL_CONVERT
++    return ANALOG_MATRIX_TRAVEL_CONVERT(value, calib_values[row][col].zero_travel, calib_values[row][col].full_travel);
++#else
+ #define DEAD_ZONE 30
+     uint16_t travel;
+     int16_t  delta = calib_values[row][col].zero_travel - DEAD_ZONE - value;
+@@ -158,6 +164,7 @@
+     if (travel > (FULL_TRAVEL_UNIT + 1) * TRAVEL_SCALE - 1) travel = (FULL_TRAVEL_UNIT + 1) * TRAVEL_SCALE - 1;
+ 
+     return travel & 0xFF;
++#endif
+ }
+ 
+ void update_key_config(uint8_t row, uint8_t col) {
+@@ -750,6 +757,10 @@
+     }
+ }
+ 
++#ifdef ANALOG_MATRIX_FRAME_IMPL
++#include ANALOG_MATRIX_FRAME_IMPL
++#endif
++
+ uint16_t pos2actuation(uint8_t row, uint8_t col, uint8_t point) {
+     return 2000;
+ }
+--- a/keyboards/keychron/common/analog_matrix/profile.c
++++ b/keyboards/keychron/common/analog_matrix/profile.c
+@@ -341,6 +341,10 @@
+ }
+ 
+ void process_profile_select_combo(void) {
++#ifdef ANALOG_MATRIX_FN_ACTIVE
++    if (ANALOG_MATRIX_FN_ACTIVE) prof_combo |= KEY_PRESS_FN;
++    else { prof_combo &= ~(KEY_PRESS_FN | KEY_PRESS_P); return; }
++#endif
+     extern matrix_row_t virtual_matrix[MATRIX_ROWS];
+ 
+     if (prof_combo & KEY_PRESS_FN) {

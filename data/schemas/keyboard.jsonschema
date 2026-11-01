@@ -63,6 +63,7 @@
                 "cortex-m0plus",
                 "cortex-m3",
                 "cortex-m4",
+                "SN34F280",
                 "cortex-m7",
                 "cortex-m23",
                 "cortex-m33",

@@ -1,0 +1,149 @@
+--- a/keyboards/keychron/common/keychron_raw_hid.c
++++ b/keyboards/keychron/common/keychron_raw_hid.c
+@@ -18,8 +18,11 @@
+ #include "keychron_common.h"
+ #include "keychron_raw_hid.h"
+ #include "raw_hid.h"
++#include "host.h"
+ #include "version.h"
++#ifndef KEYCHRON_NO_LANGUAGE
+ #include "language.h"
++#endif
+ #ifdef FACTORY_TEST_ENABLE
+ #    include "factory_test.h"
+ #endif
+@@ -71,7 +74,11 @@
+ #    endif
+         ;
+ 
+-    data[2] = (FEATURE_QUICK_START | FEATURE_NKRO) >> 8;
++    data[2] = (
++#ifndef KEYCHRON_NO_QUICK_START
++        FEATURE_QUICK_START |
++#endif
++        FEATURE_NKRO) >> 8;
+ }
+ 
+ #    ifdef ANANLOG_MATRIX
+@@ -100,23 +107,26 @@
+ #    endif
+ 
+ void get_firmware_version(uint8_t *data) {
++    // One bounded implementation for USB transports, including freestanding
++    // platforms without libc itoa(). DEVICE_VER is the common BCD version.
++    _Static_assert(sizeof(QMK_BUILDDATE) + 8 <= RAW_EPSIZE - 1, "Firmware version exceeds Raw HID payload");
++    static const char hex[] = "0123456789abcdef";
+     uint8_t i = 0;
++    memset(data, 0, RAW_EPSIZE - 1);
+     data[i++] = 'v';
+-    if ((DEVICE_VER & 0xF000) != 0) itoa((DEVICE_VER >> 12), (char *)&data[i++], 16);
+-    itoa((DEVICE_VER >> 8) & 0xF, (char *)&data[i++], 16);
++    if (DEVICE_VER & 0xF000) data[i++] = hex[(DEVICE_VER >> 12) & 0xF];
++    data[i++] = hex[(DEVICE_VER >> 8) & 0xF];
+     data[i++] = '.';
+-    itoa((DEVICE_VER >> 4) & 0xF, (char *)&data[i++], 16);
++    data[i++] = hex[(DEVICE_VER >> 4) & 0xF];
+     data[i++] = '.';
+-    itoa(DEVICE_VER & 0xF, (char *)&data[i++], 16);
++    data[i++] = hex[DEVICE_VER & 0xF];
+     data[i++] = ' ';
+-    memcpy(&data[i], QMK_BUILDDATE, sizeof(QMK_BUILDDATE));
+-    i += sizeof(QMK_BUILDDATE);
++    memcpy(data + i, QMK_BUILDDATE, sizeof(QMK_BUILDDATE));
+ }
+ 
+ void kc_raw_hid_send(uint8_t src, uint8_t *data, uint8_t len) {
+     if (src == RAW_HID_SRC_USB) {
+-        extern host_driver_t chibios_driver;
+-        chibios_driver.send_raw_hid(data, len);
++        host_raw_hid_send(data, len);
+     }
+ #    ifdef LK_WIRELESS_ENABLE
+     else if (wireless_get_state() == WT_CONNECTED) {
+@@ -127,6 +137,12 @@
+     }
+ #    endif
+ }
++
++#ifdef ANANLOG_MATRIX
++__attribute__((weak)) void kc_analog_matrix_rx(uint8_t *data, uint8_t length) {
++    analog_matrix_rx(data, length);
++}
++#endif
+ 
+ bool kc_raw_hid_rx(uint8_t src, uint8_t *data, uint8_t length) {
+ #    if defined(ANANLOG_MATRIX) && defined(VIA_ENABLE)
+@@ -160,6 +176,7 @@
+             break;
+ 
+         case KC_GET_SUPPORT_FEATURE:
++            memset(data + 1, 0, length - 1);
+             get_support_feature(&data[1]);
+             break;
+ 
+@@ -174,7 +191,13 @@
+                     data[2] = 0;
+                     data[3] = MISC_PROTOCOL_VERSION & 0xFF;
+                     data[4] = (MISC_PROTOCOL_VERSION >> 8) & 0xFF;
+-                    data[5] = MISC_DFU_INFO | MISC_LANGUAGE
++                    data[5] = 0
++#    ifndef KEYCHRON_NO_DFU_INFO
++                              | MISC_DFU_INFO
++#    endif
++#    ifndef KEYCHRON_NO_LANGUAGE
++                              | MISC_LANGUAGE
++#    endif
+ #    ifdef DYNAMIC_DEBOUNCE_ENABLE
+                               | MISC_DEBOUNCE
+ #    endif
+@@ -187,20 +210,26 @@
+ #    ifdef USB_REPORT_INTERVAL_ENABLE
+                               | MISC_REPORT_REATE
+ #    endif
++#    ifndef KEYCHRON_NO_QUICK_START
+                               | MISC_QUICK_START
++#    endif
+ #    ifdef NKRO_ENABLE
+                               | MISC_NKRO
+ #    endif
+                         ;
+                     break;
+ 
++#    ifndef KEYCHRON_NO_DFU_INFO
+                 case DFU_INFO_GET:
+                     dfu_info_rx(data, length);
+                     break;
+ 
++#    endif
++#    ifndef KEYCHRON_NO_LANGUAGE
+                 case LANGUAGE_GET ... LANGUAGE_SET:
+                     language_rx(data, length);
+                     break;
++#    endif
+ 
+ #    if defined(DYNAMIC_DEBOUNCE_ENABLE)
+                 case DEBOUNCE_GET ... DEBOUNCE_SET:
+@@ -243,7 +272,7 @@
+ 
+ #    ifdef ANANLOG_MATRIX
+         case 0xA9:
+-            analog_matrix_rx(data, length);
++            kc_analog_matrix_rx(data, length);
+             return true;
+ #    endif
+         case 0xAA:
+@@ -272,12 +301,12 @@
+ }
+ 
+ #    if defined(VIA_ENABLE)
+-bool via_command_kb(uint8_t src, uint8_t *data, uint8_t length) {
++__attribute__((weak)) bool via_command_kb(uint8_t src, uint8_t *data, uint8_t length) {
+     return kc_raw_hid_rx(src, data, length);
+ }
+ 
+ /* Override default via_raw_hid_send implement */
+-void via_raw_hid_send(uint8_t src, uint8_t *data, uint8_t len) {
++__attribute__((weak)) void via_raw_hid_send(uint8_t src, uint8_t *data, uint8_t len) {
+     kc_raw_hid_send(src, data, len);
+ }
+ #    else

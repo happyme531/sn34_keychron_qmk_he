@@ -1,0 +1,18 @@
+--- a/keyboards/keychron/common/analog_matrix/analog_matrix.c
++++ b/keyboards/keychron/common/analog_matrix/analog_matrix.c
+@@ -683,11 +683,13 @@
+         analog_key_matrix[row][col].value     = value; // for debug
+         return false;
+     }
+-    auto_caliration_check(row, col, value);
++    if (auto_calib[row][col].state != AUTO_CALIB_NEXT_LOOP || value < AUTO_CALIB_FULL_TRAVEL_THRESHOLD_VALUE)
++        auto_caliration_check(row, col, value);
+ 
+     analog_key_t *k = &analog_key_matrix[row][col];
+ 
+-    if (abs(k->last_val - value) < 5) return false;
++    int delta = (int)k->last_val - value;
++    if (delta > -5 && delta < 5) return false;
+ 
+     k->last_val = value;
+     k->value    = value;

@@ -1,0 +1,30 @@
+[
+  {
+    "file": "001-he-correctness.patch",
+    "purpose": "Fix calibration layout/averaging, response bounds, profile validation, gamepad curves/buttons/axes and optional RGB guards."
+  },
+  {
+    "file": "002-he-platform-hooks.patch",
+    "purpose": "Expose optional frame, travel conversion, calibration thresholds and Fn-state hooks without BAT68 board knowledge in HE core."
+  },
+  {
+    "file": "003-he-performance.patch",
+    "purpose": "Keep measured steady-state auto-calibration and integer delta optimizations separate from correctness fixes."
+  },
+  {
+    "file": "004-via-rgb.patch",
+    "purpose": "Save batched RGB fields and preserve inclusive brightness endpoints."
+  },
+  {
+    "file": "005-nkro-api.patch",
+    "purpose": "Use the pinned quantum EEPROM keymap pointer API."
+  },
+  {
+    "file": "006-raw-hid-transport-hooks.patch",
+    "purpose": "Reuse Launcher command dispatch on any QMK host transport, bound version formatting and expose optional HE/VIA policy hooks; disable unavailable services explicitly."
+  },
+  {
+    "file": "007-via-storage-compatibility-tag.patch",
+    "purpose": "Allow an explicit storage compatibility date instead of coupling persistent VIA keymaps/macros to the current firmware build date."
+  }
+]

@@ -94,3 +94,7 @@ GRAPHICS
 *.hex binary
 *.eep binary
 nix/sources.nix linguist-generated=true
+*.patch text eol=lf
+*.sh text eol=lf
+*.mk text eol=lf
+*.py text eol=lf

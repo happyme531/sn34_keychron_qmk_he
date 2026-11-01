@@ -1,0 +1,56 @@
+--- a/Middlewares/Source/USB_Device/Class/HID/usbd_hid.c
++++ b/Middlewares/Source/USB_Device/Class/HID/usbd_hid.c
+@@ -152,7 +152,7 @@
+     uint8_t                intf, *ptr;
+     int                    i;
+     int32_t                size = 0;
+-    HAL_Status_T           ret;
++    HAL_Status_T           ret = HAL_ERROR;
+     /* check desc_state */
+     if (hhid->desc_state == HID_DESC_UPDATE_PASSED)
+         return HAL_OK;
+@@ -260,7 +260,7 @@
+             pEp_desc->bEndpointAddress = hep->pEp->address;
+             pEp_desc->wMaxPacketSize   = param->out_report_length;
+             pEp_desc->bInterval        = param->hs_Interval;
+-            if (hep->pEp_desc->wMaxPacketSize == 0)
++            if (pEp_desc->wMaxPacketSize == 0)
+             {
+                 // USBD_HID_PRINT_ERR("incorrect EP-Out MPS\n");
+                 goto fail;
+@@ -312,7 +312,7 @@
+     USBD_HID_IntfHandle_t *hintf;
+     USBD_HID_Intf_Param_t *param;
+     USBD_HID_EpHandle_t   *hep;
+-    HAL_Status_T           ret;
++    HAL_Status_T           ret = HAL_ERROR;
+     int                    i;
+     if (hhid == NULL)
+     {
+@@ -758,7 +758,7 @@
+     USBD_HID_IntfHandle_t *hintf;
+     USBD_SetupReq_t       *req         = hhid->pRequest;
+     uint8_t                report_type = (req->wValue & 0xFF00) >> 8;
+-    HAL_Status_T           ret;
++    HAL_Status_T           ret = HAL_ERROR;
+ 
+     hintf = get_intf_hdr(pClass, req->wIndex);
+ 
+@@ -1005,7 +1005,7 @@
+     USBD_HID_Handle_t     *hhid = &HID_Handle;
+     USBD_HID_EpHandle_t   *hep;
+     struct _USBD_Handle_t *pdev = USBD_HID.pdev;
+-    HAL_Status_T           ret;
++    HAL_Status_T           ret = HAL_ERROR;
+ 
+     if ((pdev == NULL) || (pdev->dev_state != USBD_STATE_CONFIGURED) || (idx > USBD_HID_MAX_INTF_NUM))
+     {
+@@ -1049,7 +1049,7 @@
+     struct _USBD_Handle_t *pdev = USBD_HID.pdev;
+     USBD_HID_Intf_Param_t *param;
+     int32_t                result_len;
+-    HAL_Status_T           ret;
++    HAL_Status_T           ret = HAL_ERROR;
+     if ((pdev == NULL) || (pdev->dev_state != USBD_STATE_CONFIGURED) || (idx > USBD_HID_MAX_INTF_NUM))
+     {
+         // USBD_HID_PRINT_ERR("invalid parameter in ReceiveReport\n");
