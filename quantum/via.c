@@ -34,7 +34,10 @@
 #include "matrix.h"
 #include "timer.h"
 #include "wait.h"
-#include "version.h" // for QMK_BUILDDATE used in EEPROM magic
+#include "version.h"
+#ifndef VIA_EEPROM_COMPAT_DATE
+#    define VIA_EEPROM_COMPAT_DATE QMK_BUILDDATE
+#endif // for QMK_BUILDDATE used in EEPROM magic
 #include "nvm_via.h"
 
 #if defined(AUDIO_ENABLE)
@@ -71,7 +74,7 @@ static uint8_t rgb_matrix_value_id_mask;
 // Can be called in an overriding via_init_kb() to test if keyboard level code usage of
 // EEPROM is invalid and use/save defaults.
 bool via_eeprom_is_valid(void) {
-    char *  p      = QMK_BUILDDATE; // e.g. "2019-11-05-11:29:54"
+    char *  p      = VIA_EEPROM_COMPAT_DATE; // e.g. "2019-11-05-11:29:54"
     uint8_t magic0 = ((p[2] & 0x0F) << 4) | (p[3] & 0x0F);
     uint8_t magic1 = ((p[5] & 0x0F) << 4) | (p[6] & 0x0F);
     uint8_t magic2 = ((p[8] & 0x0F) << 4) | (p[9] & 0x0F);
@@ -88,7 +91,7 @@ bool via_eeprom_is_valid(void) {
 // Keyboard level code (eg. via_init_kb()) should not call this
 void via_eeprom_set_valid(bool valid) {
     if (valid) {
-        char *  p      = QMK_BUILDDATE; // e.g. "2019-11-05-11:29:54"
+        char *  p      = VIA_EEPROM_COMPAT_DATE; // e.g. "2019-11-05-11:29:54"
         uint8_t magic0 = ((p[2] & 0x0F) << 4) | (p[3] & 0x0F);
         uint8_t magic1 = ((p[5] & 0x0F) << 4) | (p[6] & 0x0F);
         uint8_t magic2 = ((p[8] & 0x0F) << 4) | (p[9] & 0x0F);
@@ -714,7 +717,7 @@ void via_qmk_rgb_matrix_set_value(uint8_t *data) {
     rgb_matrix_value_id_mask |= 0x01U << *value_id;
     switch (*value_id) {
         case id_qmk_rgb_matrix_brightness: {
-            rgb_matrix_sethsv_noeeprom(rgb_matrix_get_hue(), rgb_matrix_get_sat(), scale8(value_data[0], RGB_MATRIX_MAXIMUM_BRIGHTNESS));
+            rgb_matrix_sethsv_noeeprom(rgb_matrix_get_hue(), rgb_matrix_get_sat(), (((uint16_t)value_data[0] * RGB_MATRIX_MAXIMUM_BRIGHTNESS + 127u) / UINT8_MAX));
             break;
         }
         case id_qmk_rgb_matrix_effect: {
@@ -738,24 +741,24 @@ void via_qmk_rgb_matrix_set_value(uint8_t *data) {
 }
 
 void via_qmk_rgb_matrix_save(void) {
-    if (rgb_matrix_value_id_mask == (0x01U << id_qmk_rgb_matrix_brightness)) {
+    if (rgb_matrix_value_id_mask & (0x01U << id_qmk_rgb_matrix_brightness)) {
         uint8_t *addr = (uint8_t*)EECONFIG_RGB_MATRIX + offsetof(rgb_config_t, hsv.v);
         eeprom_write_byte(addr, rgb_matrix_config.hsv.v);
     }
 
-    if (rgb_matrix_value_id_mask == (0x01U << id_qmk_rgb_matrix_effect)) {
+    if (rgb_matrix_value_id_mask & (0x01U << id_qmk_rgb_matrix_effect)) {
         uint8_t mode = (rgb_matrix_config.mode << 2) | rgb_matrix_config.enable;
         eeprom_write_byte((uint8_t*)EECONFIG_RGB_MATRIX, mode);
     }
 
-    if (rgb_matrix_value_id_mask == (0x01U << id_qmk_rgb_matrix_color)) {
+    if (rgb_matrix_value_id_mask & (0x01U << id_qmk_rgb_matrix_color)) {
         uint8_t *addr = (uint8_t*)EECONFIG_RGB_MATRIX + offsetof(rgb_config_t, hsv.h);
         eeprom_write_byte(addr,  rgb_matrix_config.hsv.h);
         addr = (uint8_t*)EECONFIG_RGB_MATRIX + offsetof(rgb_config_t, hsv.s);
         eeprom_write_byte(addr,  rgb_matrix_config.hsv.s);
     }
 
-    if (rgb_matrix_value_id_mask == (0x01U << id_qmk_rgb_matrix_effect_speed)) {
+    if (rgb_matrix_value_id_mask & (0x01U << id_qmk_rgb_matrix_effect_speed)) {
         uint8_t *addr = (uint8_t*)EECONFIG_RGB_MATRIX + offsetof(rgb_config_t, speed);
         eeprom_write_byte(addr, rgb_matrix_config.speed);
     }

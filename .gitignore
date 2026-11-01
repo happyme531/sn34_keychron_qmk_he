@@ -121,3 +121,8 @@ compile_commands.json
 via*.json
 /keyboards/**/keymaps/via/*
 /keyboards/**/keymaps/vial/*
+
+# Local SN34 SDK/toolchains and imported development artifacts
+.sn34-local.json
+.deps/
+/tools/

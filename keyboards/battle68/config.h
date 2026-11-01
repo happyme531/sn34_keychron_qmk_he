@@ -1,5 +1,5 @@
-// Generated from firmware/board/bat68.json; edit the model instead.
+// Generated from this keyboard's board/board.json.
 #pragma once
 #define MATRIX_ROWS 6
 #define MATRIX_COLS 16
-#include "qmk/config.h"
+#include "config_base.h"

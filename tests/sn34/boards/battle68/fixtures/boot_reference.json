@@ -1,0 +1,36 @@
+{
+  "source_sha256": "b6006ef843ef5dd4e285c9e06dc04f717326b620ce08a6dfe2b17decbd310d0e",
+  "method": "Executed the retained Boot decision with hardware initialization modeled; no executable bytes included.",
+  "cases": [
+    {
+      "footer": 2863289685,
+      "option": 0,
+      "result": "USER_REBOOT"
+    },
+    {
+      "footer": 0,
+      "option": 0,
+      "result": "USB_ISP"
+    },
+    {
+      "footer": 4294967295,
+      "option": 0,
+      "result": "USB_ISP"
+    },
+    {
+      "footer": 2863289685,
+      "option": 4,
+      "result": "USER_REBOOT"
+    },
+    {
+      "footer": 0,
+      "option": 4,
+      "result": "USB_ISP"
+    },
+    {
+      "footer": 4294967295,
+      "option": 4,
+      "result": "USB_ISP"
+    }
+  ]
+}

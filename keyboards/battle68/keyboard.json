@@ -1,7 +1,7 @@
 {
   "keyboard_name": "BAT68 QMK HE",
   "manufacturer": "BAT68",
-  "maintainer": "BAT68",
+  "maintainer": "SN34",
   "processor": "SN34F280",
   "bootloader": "custom",
   "usb": {

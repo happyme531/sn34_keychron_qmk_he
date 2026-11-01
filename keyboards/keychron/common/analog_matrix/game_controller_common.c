@@ -32,8 +32,9 @@ void game_controller_curve_init(point_t *pt) {
     if (curve[0].y == 0 && curve[1].y == 0 && curve[2].y == 0 && curve[3].y == 0) {
         point_t default_curve[CURVE_POINTS_COUNT] = {{0, 0}, {10, 31}, {30, 95}, {40, 127}};
         memcpy(curve, default_curve, sizeof(default_curve));
-        slope[0] = slope[1] = slope[2] = 3.175f;
     }
+    for (unsigned i = 0; i < CURVE_POINTS_COUNT - 1; i++)
+        slope[i] = curve[i + 1].x > curve[i].x ? (float)(curve[i + 1].y - curve[i].y) / (curve[i + 1].x - curve[i].x) : 0.0f;
 }
 
 void game_controller_mode_init(uint8_t mode) {
@@ -63,7 +64,7 @@ bool game_controller_mode_set(uint8_t mode) {
 }
 
 bool game_controller_set_curve(point_t *pt) {
-    if (curve[0].x > curve[1].x || curve[1].x > curve[2].x || curve[2].x > curve[3].x) return false;
+    if (pt[0].x > pt[1].x || pt[1].x > pt[2].x || pt[2].x > pt[3].x) return false;
 
     memcpy(curve, pt, sizeof(curve));
     if (curve[0].x != curve[1].x) slope[0] = (float)(curve[1].y - curve[0].y) / (curve[1].x - curve[0].x);

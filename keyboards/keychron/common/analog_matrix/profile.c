@@ -131,7 +131,7 @@ void profile_init(bool reset) {
             // Resotre to default if not in valid range
             if (profile[i].global.act_pt == 0 || profile[i].global.act_pt > 40) profile[i].global.act_pt = DEFAULT_ACTUATION_POINT;
             if (profile[i].global.rpd_trig_sen == 0 || profile[i].global.rpd_trig_sen > 39) profile[i].global.rpd_trig_sen = DEFAULT_RAPID_TRIGGER_SENSITIVITY;
-            if (profile[i].global.rpd_trig_sen_deact == 0 || profile[i].global.rpd_trig_sen > 39) profile[i].global.rpd_trig_sen_deact = profile[i].global.rpd_trig_sen;
+            if (profile[i].global.rpd_trig_sen_deact == 0 || profile[i].global.rpd_trig_sen_deact > 39) profile[i].global.rpd_trig_sen_deact = profile[i].global.rpd_trig_sen;
         }
 
         free(buf);
@@ -341,6 +341,10 @@ bool profile_reset(uint8_t prof_index) {
 }
 
 void process_profile_select_combo(void) {
+#ifdef ANALOG_MATRIX_FN_ACTIVE
+    if (ANALOG_MATRIX_FN_ACTIVE) prof_combo |= KEY_PRESS_FN;
+    else { prof_combo &= ~(KEY_PRESS_FN | KEY_PRESS_P); return; }
+#endif
     extern matrix_row_t virtual_matrix[MATRIX_ROWS];
 
     if (prof_combo & KEY_PRESS_FN) {
@@ -421,6 +425,7 @@ void profile_indication_timer_check(void) {
 }
 
 void profile_indication(void) {
+#ifdef RGB_MATRIX_ENABLE
     if (prof_ind_state) {
         static uint8_t prof_led_list[3] = PROFILE_LED_MATRIX_LIST;
         rgb_matrix_set_color_all(prof_ind_state % 2 ? 0 : 255, 0, 0);
@@ -428,5 +433,6 @@ void profile_indication(void) {
             rgb_matrix_set_color(prof_led_list[current_profile_index], prof_ind_state % 2 ? 0 : 255, prof_ind_state % 2 ? 0 : 255, prof_ind_state % 2 ? 0 : 255);
         }
     }
+#endif
 }
 #endif

@@ -70,10 +70,10 @@ bool joystick_update(analog_key_t *key) {
 
     if (regular_trigger_action(key)) {
         if (key->state == AKS_REGULAR_PRESSED) {
-            if (key->js_axis >= GC_BUTTON_0 && key->js_axis <= GC_BUTTON_31) register_joystick_button(QK_JOYSTICK_BUTTON_0 + (key->js_axis - GC_BUTTON_0));
+            if (key->js_axis >= GC_BUTTON_0 && key->js_axis <= GC_BUTTON_31) register_joystick_button(key->js_axis - GC_BUTTON_0);
             game_controller_matrix[key->r] |= 0x01 << key->c;
         } else {
-            if (key->js_axis >= GC_BUTTON_0 && key->js_axis <= GC_BUTTON_31) unregister_joystick_button(QK_JOYSTICK_BUTTON_0 + (key->js_axis - GC_BUTTON_0));
+            if (key->js_axis >= GC_BUTTON_0 && key->js_axis <= GC_BUTTON_31) unregister_joystick_button(key->js_axis - GC_BUTTON_0);
             game_controller_matrix[key->r] &= ~(0x01 << key->c);
         }
 
@@ -89,9 +89,8 @@ void joystick_clear(void) {
     memset(axis_dir, 0, sizeof(axis_dir));
     memset(axis_value, 0, sizeof(axis_value));
 
-    for (uint8_t i = 0; i < JOYSTICK_BUTTON_COUNT; i++) {
-        unregister_joystick_button(i);
-    }
+    memset(joystick_state.buttons, 0, sizeof(joystick_state.buttons));
+    joystick_state.dirty = true;
     for (uint8_t i = 0; i < GC_AXIS_MAX; i++) {
         joystick_set_axis(i, 0);
     }
@@ -107,7 +106,7 @@ static void joystick_action(void) {
         axis_neg = i * 2;
         axis_pos = i * 2 + 1;
 
-        if (axis_changed[i] || axis_changed[axis_pos]) {
+        if (axis_changed[axis_neg] || axis_changed[axis_pos]) {
             changed = true;
             if (axis_travel[axis_neg] > TRAVEL_SCALE && axis_travel[axis_pos] > TRAVEL_SCALE) {
                 // Both direction key are pressed

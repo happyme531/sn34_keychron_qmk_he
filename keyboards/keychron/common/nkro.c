@@ -41,7 +41,7 @@ void nkro_rx(uint8_t *data, uint8_t length) {
             } else {
 #if defined(NKRO_ENABLE) && !defined(APDAPTIVE_NKRO_ENABLE)
                 keymap_config.nkro = data[2];
-                eeconfig_update_keymap(keymap_config.raw);
+                eeconfig_update_keymap(&keymap_config);
                 data[2] = KC_SUCCESS;
 #else
                 data[2] = KC_FAIL;

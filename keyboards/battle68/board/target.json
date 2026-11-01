@@ -1,0 +1,16 @@
+{
+  "mcu": "SN34F280",
+  "bootloader": "vendor_footer",
+  "sources": [
+    "battle68.c",
+    "indicators.c",
+    "diagnostics.c"
+  ],
+  "config": "config_base.h",
+  "features": {
+    "rgb": true,
+    "xinput": true,
+    "diagnostics": true,
+    "ota": true
+  }
+}

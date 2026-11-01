@@ -16,6 +16,9 @@
 
 #include "quantum.h"
 #include "analog_matrix.h"
+#ifdef ANALOG_MATRIX_PLATFORM_HEADER
+#include ANALOG_MATRIX_PLATFORM_HEADER
+#endif
 #include "keymap_introspection.h"
 #include "raw_hid.h"
 #include "eeprom.h"
@@ -141,6 +144,9 @@ uint8_t analog_matrix_get_travel(uint8_t row, uint8_t col) {
 }
 
 static uint8_t convert_to_travel(uint8_t row, uint8_t col, uint16_t value) {
+#ifdef ANALOG_MATRIX_TRAVEL_CONVERT
+    return ANALOG_MATRIX_TRAVEL_CONVERT(value, calib_values[row][col].zero_travel, calib_values[row][col].full_travel);
+#else
 #define DEAD_ZONE 30
     uint16_t travel;
     int16_t  delta = calib_values[row][col].zero_travel - DEAD_ZONE - value;
@@ -154,10 +160,11 @@ static uint8_t convert_to_travel(uint8_t row, uint8_t col, uint16_t value) {
 
     if (x > REF_ZERO_TRAVEL) return 0;
 
-    travel = (uint16_t)((TRAVEL_POLYNOMIAL(x) - TRAVEL_POLYNOMIAL(REF_ZERO_TRAVEL)) * scale_factor[row][col] * TRAVEL_SCALE + 0.5);
+    travel = (uint16_t)((TRAVEL_POLYNOMIAL(x) - TRAVEL_POLYNOMIAL(REF_ZERO_TRAVEL)) * scale_factor[row][col] * TRAVEL_SCALE + 0.5f);
     if (travel > (FULL_TRAVEL_UNIT + 1) * TRAVEL_SCALE - 1) travel = (FULL_TRAVEL_UNIT + 1) * TRAVEL_SCALE - 1;
 
     return travel & 0xFF;
+#endif
 }
 
 void update_key_config(uint8_t row, uint8_t col) {
@@ -247,7 +254,7 @@ static void update_default_travel(void) {
 static inline void update_scale_factor(uint8_t row, uint8_t col) {
     calibrated_value_t *p_calib = &calib_values[row][col];
 
-    if (calibrated | CALI_FULL_TRAVEL) {
+    if (calibrated & (CALI_ZERO_TRAVEL | CALI_FULL_TRAVEL)) {
         int16_t offset      = p_calib->zero_travel - REF_ZERO_TRAVEL;
         uint16_t x          = p_calib->full_travel - offset;
 
@@ -328,8 +335,8 @@ static bool calibrate(void) {
 
                 uint32_t sum = 0;
                 for (uint8_t i=0; i<CAL_SAMPL_CNT; i++) {
-                    if (calibrate_values[r][c][cur_calib] > VALID_ANALOG_RAW_VALUE_MIN)
-                        sum += calibrate_values[r][c][cur_calib];
+                    if (calibrate_values[r][c][i] > VALID_ANALOG_RAW_VALUE_MIN)
+                        sum += calibrate_values[r][c][i];
                     else {
                         sum = 0;
                         break;
@@ -519,11 +526,11 @@ void auto_caliration_check(uint8_t row, uint8_t col, uint16_t value) {
                         p->value.zero_travel = avg_val;
 
                         // Update confidence
-                        if (avg_val - p->value.full_travel > 1100) {
+                        if (avg_val - p->value.full_travel > AUTO_CALIB_RANGE_STRONG) {
                             p->confidence += p->calibrated ? 12 : 6;
-                        } else if (avg_val - p->value.full_travel > 1000) {
+                        } else if (avg_val - p->value.full_travel > AUTO_CALIB_RANGE_MEDIUM) {
                             p->confidence += p->calibrated ? 4 : 3;
-                        } else if (avg_val - p->value.full_travel > 900) {
+                        } else if (avg_val - p->value.full_travel > AUTO_CALIB_RANGE_MINIMUM) {
                             p->confidence += p->calibrated ? 3 : 2;
                         }
                     }
@@ -676,11 +683,13 @@ bool update_raw_value(uint8_t row, uint8_t col, uint16_t value) {
         analog_key_matrix[row][col].value     = value; // for debug
         return false;
     }
-    auto_caliration_check(row, col, value);
+    if (auto_calib[row][col].state != AUTO_CALIB_NEXT_LOOP || value < AUTO_CALIB_FULL_TRAVEL_THRESHOLD_VALUE)
+        auto_caliration_check(row, col, value);
 
     analog_key_t *k = &analog_key_matrix[row][col];
 
-    if (abs(k->last_val - value) < 5) return false;
+    int delta = (int)k->last_val - value;
+    if (delta > -5 && delta < 5) return false;
 
     k->last_val = value;
     k->value    = value;
@@ -749,6 +758,10 @@ bool analog_matrix_get_key_state(uint8_t row, uint8_t col) {
             return false;
     }
 }
+
+#ifdef ANALOG_MATRIX_FRAME_IMPL
+#include ANALOG_MATRIX_FRAME_IMPL
+#endif
 
 uint16_t pos2actuation(uint8_t row, uint8_t col, uint8_t point) {
     return 2000;
@@ -841,6 +854,7 @@ static bool get_calibrated_value(uint8_t row, uint8_t col, uint8_t *data) {
         data[i++] = 0;
         data[i++] = MATRIX_COLS;
         data[i++] = 0;
+        return true;
     } else if (row >= MATRIX_ROWS || col >= MATRIX_COLS)
         return false;
 
@@ -977,6 +991,7 @@ void analog_matrix_rx(uint8_t *data, uint8_t length) {
 }
 
 void analog_matrix_indicator(void) {
+#ifdef RGB_MATRIX_ENABLE
     if (cali_state == CALIB_FULL_TRAVEL_MANUAL) {
         rgb_matrix_set_color_all(150, 0, 150);
 
@@ -999,6 +1014,7 @@ void analog_matrix_indicator(void) {
         return;
     }
     profile_indication();
+#endif
 }
 
 inline matrix_row_t analog_matrix_get_row(uint8_t row) {

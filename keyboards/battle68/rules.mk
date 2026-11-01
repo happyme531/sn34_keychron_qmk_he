@@ -1,5 +1,6 @@
 # SPDX-License-Identifier: GPL-2.0-or-later
 MCU = SN34F280
+SRC += indicators.c diagnostics.c
 BOOTLOADER = custom
 CUSTOM_MATRIX = lite
 # This pinned schema does not expose "none" as a named debounce option.

@@ -1,0 +1,13 @@
+{
+  "mcu": "SN34F280",
+  "bootloader": "vendor_footer",
+  "sources": [],
+  "config": "config_base.h",
+  "features": {
+    "rgb": true,
+    "xinput": true,
+    "diagnostics": true,
+    "ota": true
+  },
+  "test_only": true
+}
