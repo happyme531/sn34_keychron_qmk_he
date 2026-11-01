@@ -6,16 +6,17 @@ import argparse
 import json
 from pathlib import Path
 import time
-from bat68 import Raw
+from device_commands import Raw
 from transport import Probe
 from diagnostic import performance_status,status,usb_status
+from build_config import ROOT,keyboard_name
 
 def main():
     parser=argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--seconds",type=float,default=3)
     parser.add_argument("--output",type=Path,required=True)
     args=parser.parse_args()
-    mapping=json.loads(Path("build/bat68/rgb_protocol.json").read_text())
+    mapping=json.loads((ROOT/'.build/sn34'/keyboard_name()/'default/rgb_protocol.json').read_text(encoding='utf-8'))
     wanted=("SOLID_COLOR","CYCLE_SPIRAL","DIGITAL_RAIN","TYPING_HEATMAP","SOLID_MULTISPLASH")
     effects=[entry for name in wanted for entry in mapping if entry["name"]==name]
     raw=Raw();probe=Probe();original=None;before=None;results=[]

@@ -4,6 +4,8 @@
 """Run all production offline checks against one explicit build directory."""
 import sys
 from pathlib import Path
+sys.path.insert(0,str(Path(__file__).resolve().parent/"common"))
+from pathlib import Path
 sys.path.insert(0,str(Path(__file__).resolve().parents[2]/"util/sn34"))
 
 import argparse

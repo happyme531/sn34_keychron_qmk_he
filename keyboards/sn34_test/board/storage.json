@@ -11,7 +11,7 @@
   "eeprom_bank_size": 4096,
   "eeprom_size": 3584,
   "eeprom_base": 37,
-  "eeprom_magic": "0x45483842",
+  "eeprom_magic": "0x534e5431",
   "eeprom_commit": "0x4845434d",
   "eeprom_version": 1,
   "legacy_keymap_pages": [

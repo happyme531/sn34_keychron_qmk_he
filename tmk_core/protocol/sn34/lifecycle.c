@@ -3,6 +3,7 @@
 #include "platform.h"
 #include "native.h"
 #include "perf.h"
+#include "sn34_calibration.h"
 #include "sn34f28x_hal.h"
 #include "lib/lib8tion/lib8tion.h"
 // DIGITAL_RAIN uses libc rand(); this freestanding platform uses QMK's
@@ -25,7 +26,7 @@ int abs(int value) { return value<0?-value:value; }
 void bootloader_jump(void) { native_boot_requested=1; }
 void mcu_reset(void) { native_restart_requested=1; }
 int8_t sendchar(uint8_t c) { (void)c; return 0; }
-void protocol_setup(void){sn34_eeprom_init();sn34_host_init();sn34_indicators_init();}
+void protocol_setup(void){sn34_eeprom_init();sn34_he_calibration_init();sn34_host_init();sn34_indicators_init();}
 void protocol_pre_init(void){}
 void protocol_post_init(void){if(native_usb_init())native_boot_requested=1;}
 uint32_t sn34_main_loops,sn34_gated_loops,sn34_max_loop_gap_cycles;

@@ -54,8 +54,8 @@ class StorageLayout:
         return bytes.fromhex(datetime.strptime(self.via_eeprom_date, "%Y-%m-%d-%H:%M:%S").strftime("%y%m%d"))
 
 
-def load_storage(path=STORAGE_FILE):
-    data = json.loads(path.read_text(encoding="utf-8"))
+def load_storage(path=None):
+    data = json.loads((path or board_directory() / "storage.json").read_text(encoding="utf-8"))
     number = lambda value: int(value, 0) if isinstance(value, str) else value
     for name, value in list(data.items()):
         if name == "via_eeprom_date":

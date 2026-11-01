@@ -12,8 +12,12 @@ def matrix_digest(keys):
 
 
 def load_board(path=None):
-    board = json.loads((path or BOARD_FILE).read_text(encoding="utf-8"))
+    board = json.loads((path or board_directory() / "board.json").read_text(encoding="utf-8"))
     keys, matrix, scan = board["keys"], board["matrix"], board["scan"]
+    if not keys or not 1<=matrix['rows']<=255 or not 1<=matrix['cols']<=32:
+        raise ValueError('Invalid QMK matrix dimensions or empty key set')
+    if not 1<=len(board['layers'])<=8:
+        raise ValueError('The selected layer-state backend supports 1..8 layers')
     if board["schema_version"] != 1 or matrix_digest(keys) != matrix["abi_sha256"]:
         raise ValueError("Board schema or matrix ABI digest changed; review the configuration migration")
     for field in ("raw_slot", "electrical", "layout_index"):
@@ -66,10 +70,11 @@ def keyboard_definition(board, target=None):
 def sync_keyboard_definition(qmk=ROOT, board=None, check=False):
     board = board or load_board()
     expected = keyboard_definition(board)
+    target=json.loads((board_directory()/'target.json').read_text(encoding='utf-8'))
     path = qmk / "keyboards" / keyboard_name() / "keyboard.json"
     header = ('// Generated from this keyboard\'s board/board.json.\n#pragma once\n'
               '#define MATRIX_ROWS ' + str(board["matrix"]["rows"]) + '\n#define MATRIX_COLS ' +
-              str(board["matrix"]["cols"]) + '\n#include "config_base.h"\n')
+              str(board["matrix"]["cols"]) + '\n#include "' + target.get('config','config_base.h') + '"\n')
     config = path.with_name("config.h")
     if check:
         if json.loads(path.read_text(encoding="utf-8")) != expected or config.read_text(encoding="utf-8") != header:

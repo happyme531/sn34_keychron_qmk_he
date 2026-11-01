@@ -11,6 +11,7 @@ import struct
 import subprocess
 import sys
 import time
+import os
 import hid
 from transport import Probe
 from diagnostic import status
@@ -23,7 +24,9 @@ class Raw:
     def __init__(self):
         usb=load_board()["usb"]
         devices=[d for d in hid.enumerate(int(usb["vid"],0),int(usb["pid"],0)) if d["usage_page"]==0xff60 and d["usage"]==0x61]
-        if len(devices)!=1:raise RuntimeError(f"Expected one BAT68 QMK Raw HID interface, found {len(devices)}")
+        serial=os.environ.get("SN34_DEVICE_SERIAL")
+        if serial:devices=[d for d in devices if d.get("serial_number")==serial]
+        if len(devices)!=1:raise RuntimeError(f"Expected one matching QMK Raw HID interface, found {len(devices)}; select --keyboard and --serial")
         self.device=hid.device();self.device.open_path(devices[0]["path"])
     def close(self):self.device.close()
     def query(self,data):
@@ -77,7 +80,7 @@ def main():
     p.add_argument("command",choices=("status","get","set","select","he-set","toggle","clear-advanced","dks","socd","gamepad","controller","curve","calibrate","save"))
     p.add_argument("--points",type=curve_points,help="Gamepad curve, e.g. 0:0,10:31,30:95,40:127; omit to read")
     p.add_argument("--key");p.add_argument("--second-key")
-    p.add_argument("--layer",type=int,choices=range(4),default=0)
+    p.add_argument("--layer",type=int,choices=range(len(load_board()["layers"])),default=0)
     p.add_argument("--profile",type=int,choices=range(3))
     p.add_argument("--keycode",type=lambda v:int(v,0))
     p.add_argument("--mode",choices=("regular","rapid","neutral","last","first-key","second-key","deeper","deeper-single","off","hid","xinput"))

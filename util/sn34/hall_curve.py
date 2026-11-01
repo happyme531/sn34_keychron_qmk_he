@@ -11,6 +11,6 @@ def generate_hall_curve(root, build):
     for step in steps:
         cumulative.append(cumulative[-1] + step)
     normalized = [(value * 65535 + cumulative[-1] // 2) // cumulative[-1] for value in cumulative]
-    text = "// Generated from keyboards/battle68/board/hall_curve.json; no stock executable code.\n#pragma once\n"
+    text = "// Generated from the selected keyboard's hall_curve.json; no stock executable code.\n#pragma once\n"
     text += "static const uint16_t sn34_hall_adc_curve[]={" + ",".join(map(str, normalized)) + "};\n"
     write_if_changed(build / "hall_curve.generated.h",text)

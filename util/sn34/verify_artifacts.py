@@ -22,7 +22,9 @@ def verify_build(folder):
     for item in manifest["sources"] + manifest["build_inputs"]:
         assert sha(resolve_input(item["path"], manifest)) == item["sha256"], item["path"]
     tests = []
-    for filename in TESTS:
+    target=json.loads((ROOT/'keyboards'/manifest['keyboard']/'board/target.json').read_text(encoding='utf-8'))
+    required=target.get('keymap_tests',{}).get(manifest['keymap'],target.get('required_tests',TESTS))
+    for filename in required:
         path = folder / filename
         result = json.loads(path.read_text(encoding="utf-8"))
         assert result["status"] == "PASS_OFFLINE_NOT_FLASHED", filename

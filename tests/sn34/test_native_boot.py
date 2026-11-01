@@ -4,6 +4,8 @@
 """Run the native Flash HAL and check the captured retained-Boot footer contract."""
 import sys
 from pathlib import Path
+sys.path.insert(0,str(Path(__file__).resolve().parent/"common"))
+from pathlib import Path
 sys.path.insert(0,str(Path(__file__).resolve().parents[2]/"util/sn34"))
 
 import hashlib
@@ -11,7 +13,7 @@ import json
 import struct
 from unicorn import Uc,UC_ARCH_ARM,UC_MODE_THUMB,UC_MODE_MCLASS,UC_HOOK_CODE,UC_PROT_READ,UC_PROT_WRITE,UC_PROT_EXEC
 from unicorn.arm_const import *
-from test_native_usb import Machine,ROOT,BUILD,SYMS,IMAGE,STOP,BASE,MANIFEST
+from emulator import Machine,ROOT,BUILD,SYMS,IMAGE,STOP,BASE,MANIFEST
 
 class Flash(Machine):
     def __init__(self,erased_byte=0,extra_pages=()):

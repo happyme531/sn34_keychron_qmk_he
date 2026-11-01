@@ -19,8 +19,14 @@ include drivers/analog/sn34.mk
 include drivers/eeprom/sn34.mk
 include tmk_core/protocol/sn34/sources.mk
 SRC += $(SN34_EXTRA_SRC)
+SRC += $(SN34_BOOTLOADER_SRC)
 SRC += $(addprefix platforms/sn34/sn34f28x/,startup.S clock.c timebase.c runtime.c memory.c ctype.c setup.c flash.c)
+ifneq ($(strip $(SN34_RGB_ENABLE)),$(strip $(RGB_MATRIX_ENABLE)))
+    $(error SN34 target.json RGB feature must agree with RGB_MATRIX_ENABLE in rules.mk)
+endif
+ifeq ($(strip $(SN34_RGB_ENABLE)),yes)
 SRC += drivers/led/ws2812_sn34.c
+endif
 SRC := $(filter-out eeprom_driver.c,$(SRC))
 EXTRAINCDIRS := $(SN34_EXTRA_INC) $(EXTRAINCDIRS)
 OPT_DEFS += -DSN34_QMK_PLATFORM=1 -DSN34_KEYCHRON_HE=1 -DSN34_ENABLE_SCAN=1 -DSN34_ENABLE_KEYBOARD=1

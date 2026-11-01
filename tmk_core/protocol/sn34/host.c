@@ -6,10 +6,10 @@
 #include "raw_hid.h"
 #include "sn34f28x_hal.h"
 #include "game_controller_common.h"
-enum { QUEUE_COUNT=256,REPORT_MAX=64,LOOP_HEADROOM=96 };
+enum { QUEUE_COUNT=SN34_REPORT_QUEUE_COUNT,REPORT_MAX=64,LOOP_HEADROOM=SN34_REPORT_HEADROOM };
 typedef struct {uint8_t interface,length;uint8_t data[REPORT_MAX];} queued_t;
 static queued_t queue[QUEUE_COUNT];
-enum { NO_REPORT=QUEUE_COUNT,INTERFACES=6 };
+enum { NO_REPORT=QUEUE_COUNT,INTERFACES=SN34_USB_INTERFACE_COUNT };
 static uint16_t next[QUEUE_COUNT],first[INTERFACES],last[INTERFACES],free_head,count;
 static bool connected;
 static bool recover;
@@ -72,8 +72,14 @@ static void nkro(report_nkro_t *r){send_report(SN34_USB_SHARED,r,sizeof(*r));}
 static void mouse(report_mouse_t *r){send_report(SN34_USB_SHARED,r,sizeof(*r));}
 static void extra(report_extra_t *r){send_report(SN34_USB_SHARED,r,sizeof(*r));}
 static void joystick(report_joystick_t *r){send_report(SN34_USB_SHARED,r,sizeof(*r));}
+#ifdef XINPUT_ENABLE
 static void xinput(report_xinput_t *r){send_report(SN34_USB_XINPUT,r,sizeof(*r));}
+#endif
 static void raw_send(uint8_t *data,uint8_t length){if(length==RAW_EPSIZE)send_report(SN34_USB_RAW,data,length);}
 host_driver_t sn34_host_driver={.keyboard_leds=leds,.send_keyboard=keyboard,.send_nkro=nkro,
-    .send_mouse=mouse,.send_extra=extra,.send_joystick=joystick,.send_xinput=xinput,.send_raw_hid=raw_send};
+    .send_mouse=mouse,.send_extra=extra,.send_joystick=joystick,.send_raw_hid=raw_send
+#ifdef XINPUT_ENABLE
+    ,.send_xinput=xinput
+#endif
+};
 void sn34_host_init(void){reset_queue();host_set_driver(&sn34_host_driver);}

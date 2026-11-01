@@ -4,6 +4,8 @@
 """Validate production USB descriptors, protocol fallback and lighting output."""
 import sys
 from pathlib import Path
+sys.path.insert(0,str(Path(__file__).resolve().parent/"common"))
+from pathlib import Path
 sys.path.insert(0,str(Path(__file__).resolve().parents[2]/"util/sn34"))
 
 import json
@@ -11,7 +13,7 @@ import hashlib
 import struct
 import re
 from test_bat68 import Keyboard,BUILD,IMAGE,SYMS,SCRATCH,NAMES,PROFILES,KEYS,CURVE_STEPS
-from test_native_usb import source_code_address
+from emulator import source_code_address
 from build_config import ROOT
 
 

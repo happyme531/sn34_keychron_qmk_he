@@ -2,38 +2,17 @@
 // QMK EEPROM cache, saved to two banks from the board storage contract. Each
 // commit page is written last. Boot, footer and legacy keymap pages are excluded.
 #include "quantum.h"
-#include "analog_matrix.h"
 #include "eeprom.h"
 #include "sn34_eeprom.h"
-#include "hall.generated.h"
 #include "sn34_flash.h"
 #include "sn34f28x_hal.h"
 
-#if SN34_QMK_PLATFORM
 #include "nvm_eeprom_eeconfig_internal.h"
 enum { PAGE_SIZE=SN34_PAGE_SIZE, MAGIC=SN34_EEPROM_MAGIC, COMMIT=SN34_EEPROM_COMMIT, FORMAT_VERSION=SN34_EEPROM_VERSION };
-_Static_assert((uintptr_t)EECONFIG_KB_DATABLOCK == SN34_EEPROM_BASE, "QMK core EEPROM layout changed");
-_Static_assert((uintptr_t)EECONFIG_RGB_MATRIX == SN34_RGB_CORE_OFFSET, "QMK RGB EEPROM offset changed");
-_Static_assert((uintptr_t)EECONFIG_RGB_MATRIX + offsetof(rgb_config_t, hsv.v) == SN34_RGB_VALUE_OFFSET, "QMK RGB value offset changed");
-_Static_assert(KC_ANALOG_MATRIX_VERSION == SN34_HE_VERSION, "Keychron HE ABI changed");
-_Static_assert(OFFSET_CALIBRATED_DATA_START == SN34_HE_CALIBRATION_OFFSET, "Calibration ABI changed");
-_Static_assert(OFFSET_PROFILES_START == SN34_HE_PROFILES_OFFSET && PROFILE_SIZE == SN34_HE_PROFILE_SIZE, "Profile ABI changed");
-_Static_assert(OFFSET_CURVE_PTS_START == SN34_HE_CURVE_OFFSET, "Curve ABI changed");
-_Static_assert(OFFSET_GAME_CONTROLLER_MODE_START == SN34_HE_CONTROLLER_OFFSET && EECONFIG_SIZE_ANALOG_MATRIX == SN34_HE_SIZE, "HE storage size changed");
-#else
-// Archived HE builds retain their original physical storage layout.
-enum { PAGE_SIZE=512, MAGIC=0x45483842, COMMIT=0x4845434d, FORMAT_VERSION=1 };
-#endif
 typedef struct { uint32_t magic, version, sequence, size, crc, commit, header_crc; uint8_t padding[PAGE_SIZE - 7*sizeof(uint32_t)]; } header_t;
 _Static_assert(sizeof(header_t) == PAGE_SIZE, "EEPROM header page size");
-_Static_assert(EECONFIG_BASE_ANALOG_MATRIX + EECONFIG_SIZE_ANALOG_MATRIX <= EEPROM_SIZE, "EEPROM fits bank");
-_Static_assert(sizeof(calibrated_value_t) == SIZE_OF_CALIB_VALUE_T, "Keychron calibration layout");
-static uint8_t cache[EEPROM_SIZE], external[EXTERNAL_EEPROM_OFFSET + OFFSET_CALIBRATED_DATA_END];
-#if SN34_QMK_PLATFORM
+static uint8_t cache[EEPROM_SIZE];
 static const uintptr_t banks[] = {SN34_EEPROM_BANK0, SN34_EEPROM_BANK1};
-#else
-static const uintptr_t banks[] = {0x7b000, 0x7c000};
-#endif
 static uint32_t sequence;
 static int current = -1;
 static bool cached_dirty;
@@ -66,20 +45,12 @@ void sn34_eeprom_init(void) {
     }
     sequence = 0;
     cached_dirty=current<0;
-    memset(cache, 0, sizeof(cache)); memset(external, 0, sizeof(external));
+    memset(cache, 0, sizeof(cache));
     if (current >= 0) {
         memcpy(cache, (const void *)banks[current], sizeof(cache));
         sequence = ((const header_t *)(banks[current] + EEPROM_SIZE))->sequence;
     }
-    // There is no I2C calibration EEPROM on this board. Provide Keychron's
-    // fallback with the per-key released measurements and estimated bottoms.
-    uint32_t vendor = VENDOR_ID; memcpy(external, &vendor, 4);
-    external[4 + OFFSET_CALIBRATION] = 1; // Released references known; bottom still estimated.
-    calibrated_value_t *values = (calibrated_value_t *)(external + 4 + OFFSET_CALIBRATED_DATA_START);
-    for (unsigned i = 0; i < SN34_HALL_KEYS; i++) {
-        values[hall_keys[i].slot].zero_travel = hall_keys[i].idle;
-        values[hall_keys[i].slot].full_travel = hall_keys[i].bottom;
-    }
+
 }
 void eeprom_read_block(void *dst, const void *src, size_t size) {
     uintptr_t offset = (uintptr_t)src;
@@ -106,17 +77,6 @@ void eeprom_driver_erase(void) {
     sn34_eeprom_revision++;staged_bank=-1;
 }
 void eeprom_driver_format(bool erase) { (void)erase; eeprom_driver_erase(); }
-void he_eeprom_driver_init(void) {}
-void he_eeprom_driver_erase(void) { memset(external, 0, sizeof(external)); }
-void he_eeprom_read_block(void *dst, const void *src, size_t size) {
-    uintptr_t offset = (uintptr_t)src;
-    if (offset <= sizeof(external) && size <= sizeof(external) - offset) memcpy(dst, external + offset, size);
-    else memset(dst, 0, size);
-}
-void he_eeprom_write_block(const void *src, void *dst, size_t size) {
-    uintptr_t offset = (uintptr_t)dst;
-    if (offset <= sizeof(external) && size <= sizeof(external) - offset) memcpy(external + offset, src, size);
-}
 bool sn34_eeprom_dirty(void) { return cached_dirty; }
 uint32_t sn34_eeprom_sequence(void) { return sequence; }
 static int save_page(uint32_t offset,const void *data){
@@ -158,3 +118,4 @@ int sn34_eeprom_save(void) {
     }
     return written;
 }
+

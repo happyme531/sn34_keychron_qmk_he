@@ -6,6 +6,7 @@
 #include "analog_matrix.h"
 #include "sn34f28x_hal.h"
 #include "ll_gpio_afio.h"
+#include "hardware.generated.h"
 #include "rgb.generated.h"
 enum { RESET_BYTES=120,FRAME_BYTES=RESET_BYTES*2+RGB_MATRIX_LED_COUNT*12 };
 static SPI_Handle_T rgb_spi;
@@ -24,10 +25,7 @@ void DMA1_CH0_IRQHandler(void){HAL_DMA_IRQHandler(&rgb_dma);}
 void HAL_SPI_MspInit(SPI_Handle_T *h){
     if(h!=&rgb_spi)return;
     __HAL_RCC_SSP1_CLK_ENABLE();__HAL_RCC_SSP1_RESET();__HAL_RCC_SET_SSP1_CLKSEL(RCC_SPI_CLKSEL_HCLK);
-    // P1.4 is held at the same high level as the observed original board.
-    SN_GPIO1->BSET=1u<<4;SN_GPIO1->DIR|=1u<<4;
-    HAL_GPIO_SetAFIO(SN_GPIO1,GPIO_PIN_15,GPIO_P115_SPI_MO1);
-    HAL_GPIO_SetAFIO(SN_GPIO1,GPIO_PIN_13,GPIO_P113_SPI_SCK1);
+    sn34_board_rgb_pins();
 }
 void HAL_SPI_TxCpltCallback(SPI_Handle_T *h){if(h==&rgb_spi){busy=false;sn34_rgb_frames++;}}
 void HAL_SPI_ErrorCallback(SPI_Handle_T *h){if(h==&rgb_spi){busy=false;sn34_rgb_errors++;}}
@@ -42,7 +40,7 @@ static void init(void){
     rgb_spi.instance=(SN_SPI0_Type*)SN_SPI1;rgb_spi.hdmatx=&rgb_dma;
     rgb_spi.init=(SPI_Init_T){.frame_format=SPI_FFMT_SPI,.mode=SPI_MODE_MASTER,.data_size=8,
         .fs_polarity=SPI_FS_POLARITY_LOW,.clk_polarity=SPI_CLK_POLARITY_LOW,.clk_phase=SPI_CLK_PHASE_1EDGE,
-        .sclk_div=31,.first_bit=SPI_FIRST_BIT_MSB,.tx_default=0};
+        .sclk_div=SN34_RGB_SPI_DIVIDER,.first_bit=SPI_FIRST_BIT_MSB,.tx_default=0};
     if(HAL_SPI_Init(&rgb_spi)!=HAL_OK){sn34_rgb_errors++;return;}
     initialized=true;
 }

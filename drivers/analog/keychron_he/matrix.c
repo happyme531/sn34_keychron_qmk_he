@@ -14,6 +14,6 @@ bool sn34_matrix_released(void) {
     for(unsigned r=0;r<MATRIX_ROWS;r++) if(matrix[r]) return false;
     return true;
 }
-void sn34_matrix_snapshot(uint16_t rows[MATRIX_ROWS]) {
+void sn34_matrix_snapshot(matrix_row_t rows[MATRIX_ROWS]) {
     for(unsigned r=0;r<MATRIX_ROWS;r++) rows[r]=matrix_get_row(r);
 }

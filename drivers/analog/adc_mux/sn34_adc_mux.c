@@ -1,19 +1,16 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
-// BAT68 board wiring, with the ADC initialized by the official SONiX HAL.
+// Target-generated wiring and phases, with the ADC initialized by SONiX HAL.
 #include "sn34f28x_hal.h"
 #include "native.h"
 #include "mailbox.h"
 #include "hardware.generated.h"
-#if SN34_QMK_PLATFORM
 #include "scan.generated.h"
-#endif
 
 static ADC_Handle_T adc;
 volatile uint16_t native_raw[SN34_SAMPLE_COUNT];
 volatile uint32_t native_scan_frames;
 volatile uint8_t native_scan_phase;
 static uint16_t completed_raw[SN34_SAMPLE_COUNT];
-#if SN34_QMK_PLATFORM
 static uint16_t spare_raw[SN34_SAMPLE_COUNT];
 uint16_t *volatile native_scan_work=(uint16_t*)native_raw;
 static uint16_t *volatile published_raw=completed_raw;
@@ -28,34 +25,18 @@ bool native_scan_acquire(const uint16_t **raw,uint32_t *frame){
 void native_scan_release(void){
     uint32_t saved=__get_PRIMASK();__disable_irq();leased_raw=0;__set_PRIMASK(saved);
 }
-#endif
 volatile uint32_t native_adc_cycles,native_adc_calls,native_adc_max_cycles;
 volatile uint8_t native_scan_mode=1;
-#if SN34_QMK_PLATFORM
 static volatile uint8_t requested_mode=7;
-#else
-static volatile uint8_t requested_mode=1;
-#endif
 int native_scan_configure(unsigned mode){
     if(mode!=0 && mode!=1 && mode!=3 && mode!=7)return -1;
     requested_mode=mode;return 0;
 }
 bool native_scan_snapshot(uint16_t raw[SN34_SAMPLE_COUNT],uint32_t *frame){
-#if SN34_QMK_PLATFORM
     const uint16_t *source;
     if(!native_scan_acquire(&source,frame))return false;
     for(unsigned i=0;i<SN34_SAMPLE_COUNT;i++)raw[i]=source[i];
     native_scan_release();return true;
-#else
-    uint32_t saved=__get_PRIMASK();__disable_irq();
-    uint32_t current=native_scan_frames;
-    bool changed=current!=*frame;
-    if(changed){
-        for(unsigned i=0;i<SN34_SAMPLE_COUNT;i++)raw[i]=completed_raw[i];
-        *frame=current;
-    }
-    __set_PRIMASK(saved);return changed;
-#endif
 }
 
 void native_set_mux_phase(unsigned phase){
@@ -108,13 +89,11 @@ static void start_phase(void){
         SN_ADC0->SQR0=ranks[0];SN_ADC0->SQR1=ranks[1];SN_ADC0->SQR2=ranks[2];SN_ADC0->SQR3=ranks[3];
         SN_ADC0->CTRL_b.SCANNUM=count-1;native_scan_mode=requested_mode;
     }
-#if SN34_QMK_PLATFORM
     if(native_scan_mode==7){
         const uint32_t *sequence=sn34_adc_phase_sequence[native_scan_phase];
         SN_ADC0->SQR0=sequence[0];SN_ADC0->SQR1=sequence[1];SN_ADC0->SQR2=sequence[2];SN_ADC0->SQR3=sequence[3];
         SN_ADC0->CTRL_b.SCANNUM=sn34_adc_phase_count[native_scan_phase]-1;
     }
-#endif
     SN_ADC0->CTRL_b.SWSTART=1;
 }
 void ADC0_IRQHandler(void){
@@ -134,11 +113,7 @@ void ADC0_IRQHandler(void){
     }else for(unsigned i=0;i<18;i++)data[i]=(uint16_t)registers[i];
     unsigned phase=native_scan_phase;
     bool pipelined=native_scan_mode!=0;
-#if SN34_QMK_PLATFORM
     uint16_t *work=native_scan_work;
-#else
-    uint16_t *work=(uint16_t*)native_raw;
-#endif
     if(!pipelined)sn34_scatter_adc_phase(work,data,phase);
     sn34_board_scan_input();
     native_scan_phase=(phase+1)%SN34_MUX_PHASES;
@@ -149,7 +124,6 @@ void ADC0_IRQHandler(void){
         sn34_scatter_adc_phase(work,data,phase);
     }
     if(!native_scan_phase){
-#if SN34_QMK_PLATFORM
         // Publish by pointer. Never recycle the consumer's leased frame;
         // when HE is delayed the other two buffers keep the newest frame.
         __DMB();published_raw=work;
@@ -157,9 +131,6 @@ void ADC0_IRQHandler(void){
         if(next==work || next==leased_raw)next=completed_raw;
         if(next==work || next==leased_raw)next=spare_raw;
         native_scan_work=next;
-#else
-        for(unsigned i=0;i<SN34_SAMPLE_COUNT;i++)completed_raw[i]=native_raw[i];
-#endif
         native_scan_frames++;NATIVE_MAILBOX[10]=native_scan_frames;
     }
     saved=__get_PRIMASK();__disable_irq();

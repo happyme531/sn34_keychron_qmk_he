@@ -3,8 +3,5 @@
 #include <stdint.h>
 // Outside both the bridge state and native .data/.bss; retained across a core
 // reset for diagnosis by the bridge's bounded snapshot command.
-#if SN34_QMK_PLATFORM
-#define NATIVE_MAILBOX ((volatile uint32_t*)0x20027fc0u)
-#else
-#define NATIVE_MAILBOX ((volatile uint32_t*)0x20011000)
-#endif
+#include "sn34_storage.generated.h"
+#define NATIVE_MAILBOX ((volatile uint32_t*)SN34_STACK_TOP)

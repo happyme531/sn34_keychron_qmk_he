@@ -8,7 +8,7 @@ import shutil
 import re
 import os
 from build_config import resolve_input
-from build_config import BuildPaths, keyboard_name
+from build_config import BuildPaths, keyboard_name, board_directory
 from artifacts import ROOT,write_manifest,dependencies,common_inputs
 
 
@@ -48,7 +48,10 @@ def import_build(locations,keymap="default"):
     inputs.update((qmk/"lib/python/qmk/info.py",qmk/"data/schemas/keyboard.jsonschema",intermediate/"cflags.txt",intermediate/"ldflags.txt",intermediate/"obj.txt"))
     flags=(intermediate/"cflags.txt").read_text(encoding="utf-8")
     defines=set(re.findall(r"(?:^|\s)-D(\w+)",flags))
-    required={"EEPROM_DRIVER","EEPROM_CUSTOM","VIA_ENABLE","RAW_ENABLE","NKRO_ENABLE","RGB_MATRIX_ENABLE"}
+    target_config=json.loads((board_directory()/"target.json").read_text(encoding="utf-8"))
+    required={"EEPROM_DRIVER","EEPROM_CUSTOM","VIA_ENABLE","RAW_ENABLE","NKRO_ENABLE"}
+    if target_config['features']['rgb']:required.add('RGB_MATRIX_ENABLE')
+    elif 'RGB_MATRIX_ENABLE' in defines:raise ValueError('RGB was compiled for a target that disables it')
     if not required<=defines or "BOOTMAGIC_ENABLE" in defines:
         raise ValueError(f"Unexpected production feature flags: missing {required-defines}; Bootmagic must be disabled")
     if "-O2" not in flags.split():

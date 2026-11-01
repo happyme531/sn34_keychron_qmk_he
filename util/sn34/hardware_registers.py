@@ -5,7 +5,8 @@ import xml.etree.ElementTree as ET
 ROOT=Path(__file__).resolve().parents[2]
 
 def register_list():
-    svd=ET.parse(ROOT/"analysis/sdk/SONiX.SN34F2_DFP.2.0.4/SVD/SN34F280.svd")
+    from build_config import BuildPaths
+    svd=ET.parse(BuildPaths.environment().dfp.parent.parent/"SVD/SN34F280.svd")
     peripherals={p.findtext("name"):p for p in svd.findall(".//peripherals/peripheral")}
     words=[]
     def include(name,offsets,label=None,base=None):

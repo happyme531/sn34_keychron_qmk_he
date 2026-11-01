@@ -22,8 +22,15 @@ def prepare(paths):
     build.mkdir(parents=True, exist_ok=True)
     write_if_changed(build / "manifest.json", json.dumps({"status": "BUILDING_NOT_FLASHED"}) + "\n")
     write_if_changed(build / "platform_sources.mk", "$(error SN34 preparation incomplete; rerun util/sn34/build.py)\n")
+    target = json.loads((board_directory() / "target.json").read_text(encoding="utf-8"))
+    bootloaders = {"vendor_footer": "platforms/sn34/bootloaders/vendor_footer.c"}
+    if target["bootloader"] not in bootloaders:
+        raise ValueError(f"Unsupported SN34 Bootloader backend: {target['bootloader']}")
+    scanners={"sn34_adc_mux":"drivers/analog/adc_mux/sn34_adc_mux.c"}
+    scanner=load_board()['scan']['backend']
+    if scanner not in scanners:raise ValueError(f'Unsupported SN34 scanner backend: {scanner}')
     generate_board(ROOT, build)
-    generate_hardware(load_board(), build)
+    generate_hardware(load_board(), build, rgb_enabled=target['features']['rgb'])
     generate_storage(build)
     sync_keyboard_definition(qmk, check=True)
     generate_hall_curve(ROOT, build)
@@ -62,6 +69,10 @@ def prepare(paths):
     write_if_changed(build / "patches.json", json.dumps([sdk_record], indent=2) + "\n")
     relative = lambda path: os.path.relpath(path, qmk).replace("\\", "/")
     make = "SN34_EXTRA_SRC := " + " ".join(map(relative, sources)) + "\n"
+    make += "SN34_BOOTLOADER_SRC := " + bootloaders[target["bootloader"]] + "\n"
+    make += "SN34_SCANNER_SRC := " + scanners[scanner] + "\n"
+    make += "SN34_XINPUT_ENABLE := " + ("yes" if target["features"]["xinput"] else "no") + "\n"
+    make += "SN34_RGB_ENABLE := " + ("yes" if target["features"]["rgb"] else "no") + "\n"
     make += "SN34_EXTRA_INC := " + " ".join(map(relative, includes)) + "\n"
     make += f"SN34_CODE_KIB := {LAYOUT.code_limit//1024}\n"
     write_if_changed(build / "platform_sources.mk", make)

@@ -1,6 +1,8 @@
 """Check the frozen v36 matrix, defaults and persistent storage contract."""
 import sys
 from pathlib import Path
+sys.path.insert(0,str(Path(__file__).resolve().parent/"common"))
+from pathlib import Path
 sys.path.insert(0,str(Path(__file__).resolve().parents[2]/"util/sn34"))
 
 import copy
@@ -47,7 +49,6 @@ class CompatibilityContracts(unittest.TestCase):
         folder = self.root / "board"
         folder.mkdir(parents=True)
         (folder / "board.json").write_text(json.dumps(board), encoding="utf-8")
-        (folder / "keymap_overrides.json").write_bytes((ROOT / "keyboards/battle68/board/keymap_overrides.json").read_bytes())
         generate_board(self.root, self.root, folder / "board.json")
         self.assertEqual((self.root / "keymap.generated.h").read_bytes(), expected)
 

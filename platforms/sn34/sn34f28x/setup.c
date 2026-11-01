@@ -4,19 +4,18 @@
 #include "mailbox.h"
 #include "platform.h"
 #include "sn34_flash.h"
+#include "sn34_bootloader.h"
+#ifdef RGB_MATRIX_ENABLE
 #include "rgb_matrix.h"
+#endif
 #include "perf.h"
 #include "profile.h"
 extern uint8_t __data_load[],__data_start[],__data_end[],__bss_start[],__bss_end[],native_vectors[];
 static IWDG_Handle_T watchdog;
 volatile uint32_t native_usb_loops;
 volatile uint8_t native_restart_requested,native_boot_requested;
-static void boot(void){
-    __disable_irq();
-    if(sn34_flash_invalidate_application())NVIC_SystemReset();
-    __DSB();__ISB();__HAL_RCC_SET_REMAP_BOOT_CODE();__HAL_RCC_REBOOT();
-    for(;;)__NOP();
-}
+static void boot(void){sn34_bootloader_enter();}
+
 void HAL_IWDG_MspInit(IWDG_Handle_T *h){(void)h;__HAL_RCC_WDT_CLK_ENABLE();__HAL_RCC_WDT_RESET();}
 void native_reset(void){
     __disable_irq();SysTick->CTRL=0;
@@ -44,7 +43,9 @@ void protocol_post_task(void){
     uint32_t started=sn34_cpu_clock();
     // Complete the blackout after an in-flight SPI frame finishes, even while
     // keyboard_task is gated during USB suspend.
+#ifdef RGB_MATRIX_ENABLE
     if(sn34_usb_suspended())rgb_matrix_task();
+#endif
     // Layer actions have now run, including remapped Tri Layer / Layer-Tap
     // Fn keys. Keep Keychron's Fn+P+Z/X/C task in the normal QMK lifecycle.
     if(sn34_host_ready())process_profile_select_combo();

@@ -7,7 +7,6 @@
 #define configUSE_IWDG_REGISTER_CALLBACKS 0
 #include "hal_pcd.h"
 #include "hal_iwdg.h"
-#if SN34_QMK_PLATFORM
 #define configUSE_DMA_PERIPHERAL 1
 #define configUSE_DMA_REGISTER_CALLBACKS 1
 #include "hal_dma.h"
@@ -17,7 +16,6 @@
 #define configUSE_SPI_NONBLOCKING_IT 0
 #define configUSE_SPI_NONBLOCKING_DMA 1
 #include "hal_spi.h"
-#endif
 #if SN34_ENABLE_SCAN
 #define configUSE_ADC_PERIPHERAL 1
 #define configUSE_ADC_NONBLOCKING_IT 1

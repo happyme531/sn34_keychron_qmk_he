@@ -31,6 +31,7 @@ def dependencies(paths,cwd,locations=None):
 def write_manifest(build,sources,inputs,compiler,patches,locations=None):
     locations=locations or BuildPaths.environment()
     config=json.loads((build/"build_config.json").read_text(encoding="utf-8"))
+    target=json.loads((board_directory()/"target.json").read_text(encoding="utf-8"))
     code=(build/"firmware.bin").read_bytes();assert 0<len(code)<LAYOUT.code_limit
     with (build/"firmware.elf").open("rb") as stream:
         elf=ELFFile(stream);symbols={s.name:s.entry.st_value for s in elf.get_section_by_name(".symtab").iter_symbols()}
@@ -47,13 +48,14 @@ def write_manifest(build,sources,inputs,compiler,patches,locations=None):
         standalone=True,cold_initialization_included=True,qmk_keyboard_included=True,bringup_guard_enabled=False,
         original_application_inputs=[],original_application_calls=[],he_eeprom_banks=list(map(hex,LAYOUT.eeprom_banks)),he_eeprom_bytes=LAYOUT.eeprom_size,
         storage_format=LAYOUT.eeprom_version,via_eeprom_date=LAYOUT.via_eeprom_date,matrix_abi=load_board()["matrix"],
-        hardware_verified=False,travel_units="0..240 normalized stroke with stock type-1 magnetic curve; physical millimetres not calibrated",
-        calibration_model="keyboards/battle68/board/hall_curve.json (derived numeric calibration data, no stock executable code)",
+        hardware_verified=False,features=target['features'],test_only=target.get('test_only',False),
+        bootloader_backend=target['bootloader'],travel_units="0..240 normalized stroke; physical millimetres not calibrated",
+        calibration_model=(board_directory()/"hall_curve.json").relative_to(ROOT).as_posix(),
         sources=record(sources),build_inputs=record(inputs),keychron_patches=patches,
         limits=["New production image has not been flashed; cold boot, physical USB, OTA and power cycles require hardware validation",
                 "Hall bottoms are initial estimates; normalized travel is not a measured displacement in millimetres",
-                "RGB chain layout/pins and Windows XInput driver binding require hardware validation; RGB defaults on at brightness 32",
-                "SDK redistribution permission remains unresolved; see analysis/sdk_license_review.json"])
+                "Board-specific analog behavior, lighting and USB-host behavior require hardware validation",
+                "The vendor SDK is supplied externally and is not included in this source tree"])
     (build/"manifest.json").write_text(json.dumps(manifest,indent=2),encoding="utf-8")
     print(json.dumps({k:v for k,v in manifest.items() if k not in ("sources","build_inputs","keychron_patches")},indent=2))
 
@@ -64,9 +66,14 @@ def common_inputs(build,locations=None):
     folders=[ROOT/'util/sn34', ROOT/'platforms/sn34', ROOT/'tmk_core/protocol/sn34',
              ROOT/'drivers/analog', ROOT/'tests/sn34', board_directory().parent,
              qmk/'keyboards/keychron/common/analog_matrix']
-    suffixes={'.py','.sh','.ps1','.c','.h','.S','.inc','.mk','.ld','.json','.patch'}
-    items={p for folder in folders for p in folder.rglob('*') if p.is_file() and p.suffix in suffixes
-           and not any(part in ('.venv', '__pycache__') for part in p.parts)}
+    suffixes={'.py','.sh','.ps1','.c','.h','.S','.inc','.mk','.ld','.json','.patch','.toml','.lock'}
+    items=set()
+    for folder in folders:
+        for directory,children,files in os.walk(folder):
+            children[:]=[name for name in children if name not in ('.venv','__pycache__')]
+            for name in files:
+                path=Path(directory)/name
+                if path.suffix in suffixes and path.is_file():items.add(path)
     items.update(ROOT/p for p in ('drivers/eeprom/sn34_banked.c','drivers/eeprom/sn34_storage.c',
         'drivers/eeprom/sn34_eeprom.h','drivers/eeprom/sn34.mk','drivers/led/ws2812_sn34.c','drivers/led/sn34_rgb_effects.h'))
     items.update(build/name for name in ('build_config.json','patches.json','sn34_via.json','sn34_launcher.json','rgb_effects.json','rgb_protocol.json','sn34_memory.generated.ld'))

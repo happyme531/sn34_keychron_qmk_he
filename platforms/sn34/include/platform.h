@@ -4,10 +4,11 @@
 #include <stdint.h>
 #include "platform_deps.h"
 #include "host_driver.h"
+#include "matrix.h"
 #include "sn34_eeprom.h"
 bool sn34_matrix_released(void);
 bool sn34_physical_released(void);
-void sn34_matrix_snapshot(uint16_t rows[MATRIX_ROWS]);
+void sn34_matrix_snapshot(matrix_row_t rows[MATRIX_ROWS]);
 bool sn34_he_scan(void);
 void sn34_he_init(void);
 void sn34_host_init(void);
@@ -19,9 +20,7 @@ void sn34_indicators_init(void);
 void sn34_indicators_task(void);
 extern uint32_t sn34_report_overflows;
 extern host_driver_t sn34_host_driver;
-enum { SN34_USB_BOOT=0,SN34_USB_SHARED=1,SN34_USB_DIAGNOSTIC=2,SN34_USB_OTA=3,SN34_USB_RAW=4 };
 int sn34_usb_send(unsigned interface,const void *data,unsigned length);
-#define SN34_USB_XINPUT 5
 int sn34_usb_receive(unsigned interface,void *data,unsigned size);
 bool sn34_usb_configured(void);
 bool sn34_usb_suspended(void);

@@ -4,7 +4,7 @@
 """Run the real source-built USB stack; model only PCD hardware transfers."""
 import sys
 from pathlib import Path
-sys.path.insert(0,str(Path(__file__).resolve().parents[2]/"util/sn34"))
+sys.path.insert(0,str(Path(__file__).resolve().parents[3]/"util/sn34"))
 
 import hashlib
 import json
@@ -15,8 +15,9 @@ from elftools.elf.elffile import ELFFile
 from unicorn import Uc,UcError,UC_ARCH_ARM,UC_MODE_THUMB,UC_MODE_MCLASS,UC_HOOK_CODE,UC_PROT_READ,UC_PROT_WRITE,UC_PROT_EXEC
 from unicorn.arm_const import *
 
-ROOT=Path(__file__).resolve().parents[2]
-BUILD=ROOT/os.environ.get("SN34_NATIVE_BUILD","build/native_usb")
+from build_config import ROOT, BuildPaths
+from storage import LAYOUT
+BUILD=Path(os.environ["SN34_NATIVE_BUILD"]) if "SN34_NATIVE_BUILD" in os.environ else BuildPaths.environment().build
 MANIFEST=json.loads((BUILD/"manifest.json").read_text())
 IMAGE=(BUILD/"firmware.bin").read_bytes()
 with (BUILD/"firmware.elf").open("rb") as stream:
@@ -26,14 +27,15 @@ BASE=int(MANIFEST["rom_start"],0)
 def source_code_address(address):
     return BASE<=address<BASE+len(IMAGE)
 STOP=0x100000
-SCRATCH=0x20026000 if MANIFEST.get("keychron_he") else 0x20020000
+SCRATCH=LAYOUT.bss_limit+0x2000
+STACK=LAYOUT.stack_top-192
 
 class Machine:
     def __init__(self):
         self.u=Uc(UC_ARCH_ARM,UC_MODE_THUMB|UC_MODE_MCLASS)
         self.u.ctl_set_cpu_model(UC_CPU_ARM_CORTEX_M4)
-        self.u.mem_map(BASE,0x20000,UC_PROT_READ|UC_PROT_EXEC);self.u.mem_write(BASE,IMAGE)
-        self.u.mem_map(0x20000000,0x28000,UC_PROT_READ|UC_PROT_WRITE)
+        self.u.mem_map(BASE,(len(IMAGE)+4095)&~4095,UC_PROT_READ|UC_PROT_EXEC);self.u.mem_write(BASE,IMAGE)
+        self.u.mem_map(LAYOUT.ram_origin,LAYOUT.ram_size,UC_PROT_READ|UC_PROT_WRITE)
         self.u.mem_map(STOP,0x1000,UC_PROT_READ|UC_PROT_EXEC)
         # Native init's one explicit detach bit; PCD handles all other hardware.
         self.u.mem_map(0x40000000,0x100000,UC_PROT_READ|UC_PROT_WRITE)
@@ -62,70 +64,15 @@ class Machine:
     def call(self,name,*args):
         u=self.u
         for reg,value in zip((UC_ARM_REG_R0,UC_ARM_REG_R1,UC_ARM_REG_R2,UC_ARM_REG_R3),args):u.reg_write(reg,value)
-        u.reg_write(UC_ARM_REG_SP,0x20027f00);u.reg_write(UC_ARM_REG_LR,STOP|1)
+        u.reg_write(UC_ARM_REG_SP,STACK);u.reg_write(UC_ARM_REG_LR,STOP|1)
         try:u.emu_start(SYMS[name]|1,STOP,count=5000000 if MANIFEST.get("qmk_platform") else 2000000 if MANIFEST.get("keychron_he") else 200000)
         except UcError as exc:
             regs={f"r{i}":hex(u.reg_read(reg)) for i,reg in enumerate((UC_ARM_REG_R0,UC_ARM_REG_R1,UC_ARM_REG_R2,UC_ARM_REG_R3,UC_ARM_REG_R4))}
             raise RuntimeError({"call":name,"pc":hex(u.reg_read(UC_ARM_REG_PC)),"registers":regs,"trace":[hex(v) for v in self.trace]}) from exc
         assert u.reg_read(UC_ARM_REG_PC)==STOP,(name,hex(u.reg_read(UC_ARM_REG_PC)))
-        assert u.reg_read(UC_ARM_REG_SP)==0x20027f00
+        assert u.reg_read(UC_ARM_REG_SP)==STACK
         assert u.reg_read(UC_ARM_REG_PRIMASK)==0
         return u.reg_read(UC_ARM_REG_R0)
     def setup(self,bm,request,value=0,index=0,length=0):
         self.u.mem_write(SCRATCH,struct.pack("<BBHHH",bm,request,value,index,length))
         return self.call("USBD_SetupStage",SYMS["device"],SCRATCH)
-
-def main():
-    tests=[]
-    vectors=struct.unpack_from("<112I",IMAGE)
-    assert vectors[0]==0x20028000 and vectors[1]==SYMS["sn34_reset_entry"]
-    assert vectors[16+77]==SYMS["USB_HS_IRQHandler"]
-    if "ADC0_IRQHandler" in SYMS:assert vectors[16+18]==SYMS["ADC0_IRQHandler"]
-    assert all(source_code_address(v&~1) for v in vectors[1:])
-    tests.append("Complete native interrupt table references only source-built code")
-    machine=Machine()
-    assert machine.call("native_usb_init")==0
-    tests.append("Real SDK core/HID initialization with four interfaces")
-    assert machine.setup(0x80,6,0x0100,0,18)==0
-    descriptor=machine.transfers[-1][1]
-    assert len(descriptor)==18 and descriptor[0:2]==b"\x12\x01"
-    assert struct.unpack_from("<HH",descriptor,8)==(0x0c45,0x8037)
-    tests.append("GET_DESCRIPTOR device identity and EP0 control transfer")
-    assert machine.setup(0x80,6,0x0200,0,255)==0
-    configuration=machine.transfers[-1][1]
-    assert configuration[:2]==b"\x09\x02" and configuration[4]==4
-    assert struct.unpack_from("<H",configuration,2)[0]==len(configuration)
-    at=0;interfaces=[];endpoints=[]
-    while at<len(configuration):
-        length,kind=configuration[at:at+2]
-        assert length>=2 and at+length<=len(configuration)
-        if kind==4:interfaces.append(configuration[at+2])
-        if kind==5:endpoints.append(configuration[at+2])
-        at+=length
-    assert interfaces==[0,1,2,3] and endpoints==[0x81,0x82,0x83,3,4],endpoints
-    tests.append("Four HID interfaces, valid total descriptor size and endpoint assignment")
-    # Interface report descriptors are served after enumeration (addressed state).
-    machine.call("USBD_Reset",SYMS["device"])
-    assert machine.setup(0,5,7)==0
-    for interface,length in ((0,63),(1,23),(2,34),(3,35)):
-        assert machine.setup(0x81,6,0x2200,interface,512)==0
-        report=machine.transfers[-1][1]
-        assert len(report)==length,(interface,len(report))
-        assert report[-1]==0xc0
-        if interface==2:assert report[:3]==bytes.fromhex("0668ff") and bytes.fromhex("95408102") in report
-        if interface==3:assert report[:3]==bytes.fromhex("0667ff") and bytes.fromhex("9600109102") in report and bytes.fromhex("9540b102") in report
-    tests.append("GET_DESCRIPTOR report routing for keyboard, consumer, diagnostics and ISP HID")
-    assert machine.setup(0,9,1)==0
-    assert not machine.stalls,machine.stalls
-    tests.append("SET_ADDRESS and SET_CONFIGURATION reach configured state without stalls")
-    result={"status":"PASS_OFFLINE_NOT_FLASHED","image_sha256":hashlib.sha256(IMAGE).hexdigest(),
-            "tests":tests,"hardware_stubs":list(machine.stub_addresses.values()),
-            "limits":["PCD register access, PHY behavior, DMA, clock and watchdog timing still require hardware tests",
-                      "ADC, QMK keyboard and clock validation are recorded separately when included"]}
-    (BUILD/"test_results.json").write_text(json.dumps(result,indent=2),encoding="utf-8")
-    manifest=json.loads((BUILD/"manifest.json").read_text())
-    manifest["status"]=result["status"]
-    (BUILD/"manifest.json").write_text(json.dumps(manifest,indent=2),encoding="utf-8")
-    print(json.dumps(result,indent=2))
-
-if __name__=="__main__":main()

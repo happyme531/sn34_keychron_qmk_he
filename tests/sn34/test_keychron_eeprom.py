@@ -4,6 +4,8 @@
 """Execute real SONiX Flash HAL for both HE banks and interrupted saves."""
 import sys
 from pathlib import Path
+sys.path.insert(0,str(Path(__file__).resolve().parent/"common"))
+from pathlib import Path
 sys.path.insert(0,str(Path(__file__).resolve().parents[2]/"util/sn34"))
 
 import os
@@ -11,7 +13,7 @@ os.environ.setdefault("SN34_NATIVE_BUILD", "build/keychron_he")
 import hashlib
 import json
 from test_native_boot import Flash
-from test_native_usb import BUILD, IMAGE, SCRATCH, SYMS,MANIFEST
+from emulator import BUILD, IMAGE, SCRATCH, SYMS,MANIFEST
 from unicorn import UC_PROT_READ, UC_PROT_EXEC
 
 SIZE = MANIFEST.get("he_eeprom_bytes",3584)

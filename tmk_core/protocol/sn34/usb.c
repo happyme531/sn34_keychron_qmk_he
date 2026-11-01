@@ -7,7 +7,9 @@
 #include "usb_device_state.h"
 #include "xinput_usb.h"
 #include "progmem.h"
+#ifdef RGB_MATRIX_ENABLE
 #include "rgb_matrix.h"
+#endif
 #define CONCAT(a,b) a##b
 #define CONCAT_EXPANDED(a,b) CONCAT(a,b)
 #include "reports.generated.h"
@@ -41,16 +43,20 @@ static HAL_Status_T set_feature(uint8_t idx,uint8_t id,uint8_t *data,uint16_t le
     if(idx!=SN34_USB_OTA || id || length<8 || memcmp(data,magic,8))return HAL_ERROR;
     native_boot_requested=1;return HAL_OK;
 }
-static USBD_ReportInfo_t reports={.intf_num=5,.GetInputReport_isr_cb=get_input,.SetFeatureReport_isr_cb=set_feature,
+static USBD_ReportInfo_t reports={.intf_num=SN34_HID_INTERFACES,.GetInputReport_isr_cb=get_input,.SetFeatureReport_isr_cb=set_feature,
     .intf_param={
         {.subclass=1,.protocol=1,.bInEp=1,.InEpNum=1,.in_report_length=8,.out_report_length=1,
          .report_desc_length=sizeof(KeyboardReport),.report_desc=(uint8_t*)KeyboardReport,.hs_Interval=1},
         {.bInEp=1,.InEpNum=2,.in_report_length=64,.out_report_length=2,
          .report_desc_length=sizeof(SharedReport),.report_desc=(uint8_t*)SharedReport,.hs_Interval=1},
+#if SN34_DIAGNOSTICS_ENABLE
         {.bInEp=1,.bOutEp=1,.InEpNum=3,.OutEpNum=3,.in_report_length=64,.out_report_length=64,
          .report_desc_length=sizeof(diagnostic_report),.report_desc=(uint8_t*)diagnostic_report,.hs_Interval=1},
+#endif
+#if SN34_OTA_ENABLE
         {.feature_report_length=64,
          .report_desc_length=sizeof(ota_report),.report_desc=(uint8_t*)ota_report},
+#endif
         {.bInEp=1,.bOutEp=1,.InEpNum=5,.OutEpNum=5,.in_report_length=32,.out_report_length=32,
          .report_desc_length=sizeof(RawReport),.report_desc=(uint8_t*)RawReport,.hs_Interval=1}}};
 static USB_DeviceDesc_t device_desc __attribute__((aligned(4)))={18,1,0x0200,0,0,0,64,VENDOR_ID,PRODUCT_ID,DEVICE_VER,
@@ -85,8 +91,10 @@ int native_usb_init(void){
     // The SDK allocates HID interface IDs lazily when constructing its class
     // descriptor. Reserve 0..4 before the independent XUSB class requests 5.
     if(!USBD_HID.GetClassDescriptor(&USBD_HID,USBD_SPEED_HIGH,&hid_length) || !hid_length)return -7;
+#ifdef XINPUT_ENABLE
     if(USBD_RegisterClass(&device,&sn34_xinput_class)!=HAL_OK)return -6;
     USBD_RegisterVndCallabck(&device,sn34_xinput_vendor,NULL);
+#endif
     if(USBD_ForceFS(&device,0)!=HAL_OK)return -4;
     enumeration_started=HAL_GetTick();enumeration_phase=enumerated_once=0;enumeration_error=0;
     // Class registration and interface allocation must finish before an IRQ
@@ -131,8 +139,10 @@ bool sn34_usb_suspended(void){return device.dev_state==USBD_STATE_SUSPENDED || d
 bool sn34_usb_boot_protocol(void){return USBD_HID_ReceiveProtocol(SN34_USB_BOOT)==0;}
 void sn34_usb_set_last_boot(const void *data){memcpy(last_boot,data,8);}
 int sn34_usb_send(unsigned interface,const void *data,unsigned length){
+#ifdef XINPUT_ENABLE
     if(interface==SN34_USB_XINPUT)return sn34_xinput_send(data,length);
-    if(interface>=5 || length>64)return -1;
+#endif
+    if(interface>=SN34_HID_INTERFACES || length>64)return -1;
     if(USBD_HID_SendReport(interface,(uint8_t*)data,length)!=HAL_OK)return -1;
     if(interface==SN34_USB_SHARED && length && *(const uint8_t*)data<10){
         unsigned id=*(const uint8_t*)data;memcpy(last_shared[id],data,length);shared_length[id]=length;
@@ -152,7 +162,9 @@ void native_usb_task(void){
         bool was_suspended=previous_state==USBD_STATE_SUSPENDED || previous_state==USBD_STATE_SLEEP;
         previous_state=device.dev_state;
         bool suspended=sn34_usb_suspended();
+#ifdef RGB_MATRIX_ENABLE
         rgb_matrix_set_suspend_state(suspended);
+#endif
         if(suspended)usb_device_state_set_suspend(device.CurrentConfigValue!=0,device.CurrentConfigValue);
         else if(was_suspended)usb_device_state_set_resume(sn34_usb_configured(),device.CurrentConfigValue);
         else usb_device_state_set_configuration(sn34_usb_configured(),device.CurrentConfigValue);
@@ -160,13 +172,15 @@ void native_usb_task(void){
     usb_hid_protocol_t protocol=sn34_usb_boot_protocol()?USB_PROTOCOL_BOOT:USB_PROTOCOL_REPORT;
     if(usb_device_state_get_protocol()!=protocol)usb_device_state_set_protocol(protocol);
     if(usb_device_state_get_leds()!=native_keyboard_leds)usb_device_state_set_leds(native_keyboard_leds);
-    if(response_pending && !sn34_usb_send(2,response,64))response_pending=0;
-    if(!response_pending && sn34_usb_receive(2,packet,64)==64 && packet[0]==0xaa && !memcmp(packet+5,SN34_USB_DIAGNOSTIC_TAG,3)){
+#if SN34_DIAGNOSTICS_ENABLE
+    if(response_pending && !sn34_usb_send(SN34_USB_DIAGNOSTIC,response,64))response_pending=0;
+    if(!response_pending && sn34_usb_receive(SN34_USB_DIAGNOSTIC,packet,64)==64 && packet[0]==0xaa && !memcmp(packet+5,SN34_USB_DIAGNOSTIC_TAG,3)){
         memset(response,0,64);response[0]=0x55;response[1]=packet[1];memcpy(response+5,SN34_USB_DIAGNOSTIC_TAG,3);
         sn34_diagnostic(packet,response);response_pending=1;
     }
+#endif
 }
 void raw_hid_task(void){
-    uint8_t packet[32];if(sn34_usb_receive(4,packet,32)==32)sn34_raw_hid_receive(packet,32);
+    uint8_t packet[32];if(sn34_usb_receive(SN34_USB_RAW,packet,32)==32)sn34_raw_hid_receive(packet,32);
 }
 int native_usb_reply_queued(void){return response_pending;}

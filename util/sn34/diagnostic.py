@@ -16,7 +16,7 @@ ROOT=Path(__file__).resolve().parents[2]
 MAPPING=load_board()["keys"]
 def status(probe):
     r=probe.query(0x74)
-    if r[8:12]!=b"B68Q":raise RuntimeError("Compatible QMK diagnostic firmware is not installed")
+    if r[8:12]!=load_board()["usb"]["diagnostic_tag"].encode("ascii")+b"Q":raise RuntimeError("Compatible QMK diagnostic firmware is not installed")
     info={"qmk":True,"protocol":r[12],"layers":r[13],"rows":r[14],"columns":r[15],
             "layer_state":r[16],"initialized":bool(r[17]),"report_pending":bool(r[18]),
             "keyboard_mode":"qmk" if r[19] else "stock",
@@ -38,7 +38,7 @@ def status(probe):
             info.update(actuation=None,release=None,hall_thresholds="Per-key Keychron HE settings; use util/sn34/bat68.py")
     if r[12]>=8:
         info.pop("qmk_report",None)
-        info.update(report_overflows=struct.unpack_from("<I",r,60)[0],matrix_coordinates="Production matrix; Fn is row 0, column 0")
+        info.update(report_overflows=struct.unpack_from("<I",r,60)[0],matrix_coordinates="Logical QMK coordinates from the selected keyboard model")
     return info
 
 def save(probe):

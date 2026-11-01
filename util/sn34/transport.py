@@ -10,15 +10,20 @@ import struct
 import subprocess
 import sys
 import time
+import os
+from model import load_board
 
 import hid
 
 class Probe:
     def __init__(self):
-        matches=[d for d in hid.enumerate(0x0c45,0x8037)
-                 if d["interface_number"]==2 and d["usage_page"]==0xff68]
+        usb=load_board()["usb"]
+        self.tag=usb["diagnostic_tag"].encode("ascii")
+        serial=os.environ.get("SN34_DEVICE_SERIAL")
+        matches=[d for d in hid.enumerate(int(usb["vid"],0),int(usb["pid"],0))
+                 if d["usage_page"]==0xff68 and (not serial or d.get("serial_number")==serial)]
         if len(matches)!=1:
-            raise RuntimeError(f"Expected one BAT68 vendor interface; found {len(matches)}")
+            raise RuntimeError(f"Expected one matching diagnostic interface; found {len(matches)}. Select --keyboard and --serial.")
         self.info=matches[0]
         self.dev=hid.device()
         self.dev.open_path(self.info["path"])
@@ -38,7 +43,7 @@ class Probe:
         if payload is not None:
             if len(payload)>48:raise ValueError("Payload exceeds 48 bytes")
             packet[8:8+len(payload)]=payload
-        packet[5:8]=b"B68"
+        packet[5:8]=self.tag
         # Drain stale input before issuing one request. Report ID 0 is supplied
         # as the first byte to Windows hidapi, not part of the vendor payload.
         self.dev.set_nonblocking(1)
@@ -53,7 +58,7 @@ class Probe:
         while time.monotonic()<deadline:
             reply=bytes(self.dev.read(64,50))
             if len(reply)==65 and reply[0]==0: reply=reply[1:]
-            if len(reply)==64 and reply[:2]==bytes((0x55,command)) and reply[5:8]==b"B68":
+            if len(reply)==64 and reply[:2]==bytes((0x55,command)) and reply[5:8]==self.tag:
                 if reply[2]==255: raise RuntimeError("Firmware rejected command (range, held key, signature or Flash verification)")
                 return reply
         raise TimeoutError("No matching BAT68 diagnostic reply")

@@ -15,9 +15,17 @@ from model import load_board
 
 def generate_launcher_definition(root, build, qmk, newlib=None):
     board=load_board();unit=board["layout_unit"]
+    target=json.loads((board_directory()/"target.json").read_text(encoding="utf-8"))
+    if not target["features"]["rgb"]:
+        protocol=[dict(wire=0,core=0,name="NONE",label="None")]
+        write_if_changed(build/"rgb_effects.json","[]")
+        write_if_changed(build/"rgb_protocol.json",json.dumps(protocol,indent=2))
+        write_if_changed(build/"rgb_protocol.generated.h", "#pragma once\nstatic const uint8_t sn34_rgb_wire_to_core[]={0};\nstatic const uint8_t sn34_rgb_core_to_wire[]={0};\n")
+        write_definitions(board,build,[])
+        return
     compiler = [os.environ.get("SN34_CC", "arm-none-eabi-gcc")]
     source = '#include "config.h"\n#define RGB_MATRIX_KEYREACTIVE_ENABLED\n#define RGB_MATRIX_EFFECT(name) SN34_EFFECT_##name\n#include "quantum/rgb_matrix/animations/rgb_matrix_effects.inc"\n'
-    command = compiler + ["-E", "-P", "-x", "c", "-"]
+    command = compiler + ["-DRGB_MATRIX_ENABLE", "-E", "-P", "-x", "c", "-"]
     for path in (build, board_directory().parent, root / "platforms/sn34/include", root / "drivers/led",
                  root / "drivers/analog/keychron_he", qmk / "keyboards/keychron/common/analog_matrix", qmk,
                  newlib):
@@ -57,10 +65,17 @@ def generate_launcher_definition(root, build, qmk, newlib=None):
         dict(label="Color", type="color", content=["id_qmk_rgb_matrix_color", 3, 4]),
     ]
     menus = [dict(label="Lighting", content=[dict(label="Backlight", content=controls)])]
+    write_definitions(board,build,menus)
+    write_if_changed(build / "rgb_effects.json",json.dumps(effects, indent=2))
+
+
+def write_definitions(board,build,menus):
+    unit=board["layout_unit"]
     via = json.loads((build / "sn34_via.json").read_text(encoding="utf-8"))
     # Wire IDs match Launcher's translation dictionary, independently of the
     # compiled QMK enum. Both web configurators use this explicit menu.
     via["menus"] = menus
+    via["keycodes"] = ["qmk_lighting"] if menus else []
     via["firmwareVersion"] = 5
     write_if_changed(build / "sn34_via.json",json.dumps(via, indent=2))
     mapping = json.loads((build / "board.json").read_text(encoding="utf-8"))
@@ -73,9 +88,8 @@ def generate_launcher_definition(root, build, qmk, newlib=None):
                          h=round((h + 4) / unit, 3), color="alpha"))
     definition = dict(name=via["name"], vendorId=via["vendorId"], productId=via["productId"],
                       vendorProductId=(int(via["vendorId"], 0) << 16) | int(via["productId"], 0), firmwareVersion=5,
-                      feature=["HE"], accuration=0.1, menus=menus, keycodes=["qmk_lighting"],
+                      feature=["HE"], accuration=0.1, menus=menus, keycodes=["qmk_lighting"] if menus else [],
                       customKeycodes=[], matrix=via["matrix"], layers=[layer["label"] for layer in board["layers"]],
                       layouts=dict(width=max(k["x"] + k["w"] for k in keys),
                                    height=max(k["y"] + k["h"] for k in keys), optionKeys={}, keys=keys))
     write_if_changed(build / "sn34_launcher.json",json.dumps(definition, indent=2))
-    write_if_changed(build / "rgb_effects.json",json.dumps(effects, indent=2))

@@ -54,11 +54,11 @@ checked against the preceding image.
 - [x] Select board, curve, storage and output paths by keyboard/keymap target.
 - [x] Generate ADC ranks and scatter from each target's wiring.
 - [x] Preserve v36 mapping/default/storage contracts with regression fixtures.
-- [ ] Finish extracting calibration-provider policy from the EEPROM commit engine.
-- [ ] Select Bootloader entry/packaging independently of the chip platform.
-- [ ] Configure optional USB functions and RGB hardware backend per target.
-- [ ] Extract reusable emulator classes and execute the synthetic target.
-- [ ] Complete portable host/packaging entry points and dependency lock.
+- [x] Extract calibration-provider policy from the EEPROM commit engine.
+- [x] Select Bootloader entry/packaging independently of the chip platform.
+- [x] Configure optional USB functions and RGB hardware backend per target.
+- [x] Extract reusable emulator classes and execute the synthetic target.
+- [x] Add portable host/packaging entry points and a dependency lock.
 - [ ] Validate default, minimal and synthetic builds from a fresh checkout.
 - [ ] Validate the final image on physical Battle68 hardware.
 

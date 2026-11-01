@@ -26,15 +26,15 @@ native_vectors:
 #else
     .word native_default_handler
 #endif
-#if SN34_QMK_PLATFORM
     .rept 37
     .word native_default_handler
     .endr
+#if SN34_RGB_ENABLE
     .word DMA1_CH0_IRQHandler
-    .rept 20
 #else
-    .rept 58
+    .word native_default_handler
 #endif
+    .rept 20
     .word native_default_handler
     .endr
     .word USB_HS_IRQHandler

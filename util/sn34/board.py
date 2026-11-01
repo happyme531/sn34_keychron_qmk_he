@@ -1,11 +1,15 @@
 """Generate per-target tables; no keyboard wiring or keymap policy lives here."""
 import json
 from build_config import board_directory, write_if_changed
+from pathlib import Path
 from model import load_board
 
 
 def generate_board(root, build, model_path=None):
     model = load_board(model_path or board_directory() / "board.json")
+    target_path = Path(model_path).with_name("target.json") if model_path else board_directory() / "target.json"
+    if not target_path.is_file(): target_path = board_directory() / "target.json"
+    target = json.loads(target_path.read_text(encoding="utf-8"))
     mapping, roles = model["keys"], model.get("roles", {})
     matrix, scan = model["matrix"], model["scan"]
     rows_count, cols = matrix["rows"], matrix["cols"]
@@ -26,9 +30,29 @@ def generate_board(root, build, model_path=None):
     config += '#define SN34_MATRIX_ABI_SHA256 "' + matrix["abi_sha256"] + '"\n'
     mask = sum(1 << layer["id"] for layer in model["layers"] if layer.get("role", "").endswith("_fn") or layer.get("fn", False))
     config += f"#define SN34_FN_LAYER_MASK {mask}u\n"
+    hotkeys=all(role in roles for role in ('profile_trigger','profile_1','profile_2','profile_3'))
+    config += f"#define SN34_PROFILE_HOTKEYS_ENABLE {int(hotkeys)}\n"
     for field in ("manufacturer", "product", "serial", "diagnostic_tag"):
         config += "#define SN34_USB_" + field.upper() + " " + json.dumps(model["usb"][field]) + "\n"
     config += f"#define SN34_CLOCK_HZ {model['hardware']['clock_hz']}u\n"
+    config += f"#define SN34_XINPUT_ENABLE {int(target['features']['xinput'])}\n"
+    config += f"#define SN34_DIAGNOSTICS_ENABLE {int(target['features']['diagnostics'])}\n"
+    config += f"#define SN34_OTA_ENABLE {int(target['features']['ota'])}\n"
+    config += f"#define SN34_RGB_ENABLE {int(target['features']['rgb'])}\n"
+    interfaces={'BOOT':0,'SHARED':1}
+    index=2
+    for name,flag in (('DIAGNOSTIC','diagnostics'),('OTA','ota')):
+        interfaces[name]=index if target['features'][flag] else 255
+        index+=int(target['features'][flag])
+    interfaces['RAW']=index
+    index+=1
+    interfaces['XINPUT']=index if target['features']['xinput'] else 255
+    for name,value in interfaces.items(): config+=f'#define SN34_USB_{name} {value}\n'
+    config+=f'#define SN34_HID_INTERFACES {index}\n#define SN34_USB_INTERFACE_COUNT {index+int(target["features"]["xinput"])}\n'
+    queue = model['hardware'].get('queue', {'count':256, 'headroom':96})
+    if not 1 <= queue['headroom'] < queue['count'] <= 65535:
+        raise ValueError('Invalid report queue capacity/headroom')
+    config += f"#define SN34_REPORT_QUEUE_COUNT {queue['count']}\n#define SN34_REPORT_HEADROOM {queue['headroom']}\n"
     write_if_changed(build / "board_config.generated.h", config)
     board = '#pragma once\n#include "board_config.generated.h"\ntypedef struct {uint16_t raw_slot,matrix_slot,electrical;} board_key_t;\nstatic const board_key_t board_keys[]={\n'
     hall = f"#pragma once\n#define SN34_HALL_KEYS {len(mapping)}\ntypedef struct {{uint16_t slot,electrical;uint16_t idle,bottom;}} sn34_hall_key_t;\nstatic const sn34_hall_key_t hall_keys[]={{\n"

@@ -41,6 +41,9 @@ void kc_analog_matrix_rx(uint8_t *data,uint8_t length){
     sn34_he_raw_receive(data,length);
 }
 void sn34_he_raw_receive(uint8_t *data,uint8_t length){
+#ifndef XINPUT_ENABLE
+    if(data[1]==0x23 && (data[2]&1u)){reject(data,length);return;}
+#endif
     if(data[1]==0x12){
         unsigned offset=data[3]|(data[4]<<8),requested=data[5];
         if(data[2]>=PROFILE_COUNT || requested>30 || offset+requested>PROFILE_SIZE){reject(data,length);return;}
