@@ -82,4 +82,3 @@ def sync_keyboard_definition(qmk=ROOT, board=None, check=False):
     else:
         write_if_changed(path, json.dumps(expected, ensure_ascii=False, indent=2) + "\n")
         write_if_changed(config, header)
-

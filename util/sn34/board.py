@@ -146,4 +146,3 @@ def generate_scan(model, build):
     text += "#define SN34_ADC_INITIAL_SEQUENCE {" + ",".join(map(str,scan["initial_sequence"])) + "}\n"
     text += "#define SN34_ADC_COMPACT_SEQUENCE {" + ",".join(map(str,scan["compact_sequence"])) + "}\n"
     write_if_changed(build / "scan.generated.h", text)
-

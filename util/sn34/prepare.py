@@ -81,4 +81,3 @@ def prepare(paths):
 if __name__ == "__main__":
     argparse.ArgumentParser(description=__doc__).parse_args()
     prepare(BuildPaths.environment())
-

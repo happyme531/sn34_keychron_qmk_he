@@ -95,6 +95,7 @@ GRAPHICS
 *.eep binary
 nix/sources.nix linguist-generated=true
 *.patch text eol=lf
+*.patch whitespace=-blank-at-eol
 *.sh text eol=lf
 *.mk text eol=lf
 *.py text eol=lf

@@ -51,4 +51,3 @@ EEP =
 FIRMWARE_FORMAT = bin
 MCU_FLASH_SIZE = $(SN34_CODE_KIB)
 bin: $(BUILD_DIR)/$(TARGET).bin sizeafter
-

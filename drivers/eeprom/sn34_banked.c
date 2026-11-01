@@ -118,4 +118,3 @@ int sn34_eeprom_save(void) {
     }
     return written;
 }
-

@@ -128,4 +128,3 @@ class Keyboard(Machine):
         data=payload+bytes(32-len(payload));self.u.mem_write(SCRATCH,data)
         before=len(self.transfers);self.call("sn34_raw_hid_receive",SCRATCH,32);self.drain()
         return [p for ep,p in self.transfers[before:] if ep==0x85][-1]
-
