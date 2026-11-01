@@ -59,7 +59,7 @@ checked against the preceding image.
 - [x] Configure optional USB functions and RGB hardware backend per target.
 - [x] Extract reusable emulator classes and execute the synthetic target.
 - [x] Add portable host/packaging entry points and a dependency lock.
-- [ ] Validate default, minimal and synthetic builds from a fresh checkout.
+- [x] Validate default, minimal and synthetic builds from a fresh checkout.
 - [ ] Validate the final image on physical Battle68 hardware.
 
 Offline scan and Boot decision fixtures record results previously obtained by
@@ -70,3 +70,5 @@ behavior to that captured contract; they do not rerun the OEM Boot executable.
 Physical timing, analog quality, USB-host behavior and reset/OTA still require
 hardware validation. A passing emulation run must not be reported as a physical
 keyboard test.
+
+See [the validation record](validation.md) for the tested commit and scope.

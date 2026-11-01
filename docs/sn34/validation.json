@@ -1,0 +1,39 @@
+{
+  "status": "PASS_CLEAN_CHECKOUT_OFFLINE",
+  "source_commit": "38ba288d321ec1d5c6c7abfbcee03d47acd16215",
+  "sdk_external": true,
+  "source_tree_clean": true,
+  "object_isolation": true,
+  "targets": [
+    {
+      "keyboard": "battle68",
+      "keymap": "default",
+      "code_bytes": 85704,
+      "image_sha256": "9ace99877f457c9589ab2ec06df26a5a3adb74f83578d723dcbfa7b7b846fe5f",
+      "application_sha256": "89e794618a7e7c4f519d541b20d42992f4259ee9fabfc23cb5dbb9e9032bfeef",
+      "objects": 113,
+      "source_inputs": 577,
+      "test_groups": 8
+    },
+    {
+      "keyboard": "battle68",
+      "keymap": "minimal",
+      "code_bytes": 82408,
+      "image_sha256": "bc5a1dfc518a6ee60b6c2a12110f05e957d55a35f4294bca66f4f925f3d46f5f",
+      "application_sha256": "3f2ce8c8a9dddb3c7869863a8fde1e5d55457f4b763910a1ab1db4ba821312ed",
+      "objects": 111,
+      "source_inputs": 569,
+      "test_groups": 1
+    },
+    {
+      "keyboard": "sn34_test",
+      "keymap": "default",
+      "code_bytes": 56008,
+      "image_sha256": "ac1ce821ce44cc9ea76a2e00e002744fff0e9b21b6aee34486db20569dde7ead",
+      "application_sha256": "52ac6299742f0d572969fc5006d008e67bb6954967f3b12b5734206a56457164",
+      "objects": 100,
+      "source_inputs": 485,
+      "test_groups": 1
+    }
+  ]
+}
