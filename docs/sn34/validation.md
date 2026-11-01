@@ -46,3 +46,8 @@ Its dependency-locked entry point, Python/JavaScript/PowerShell syntax and
 board-specific script rendering were checked offline. The live Launcher and
 USB interaction were not exercised in this delivery. Later source-formatting
 changes do not change the tested firmware code.
+
+All three final main-worktree targets were rebuilt after those updates.
+Their BIN images match the verified clean-checkout images byte for byte outside
+QMK's 20-byte generated build-time string. Exact hashes, times and offsets are
+recorded in [the final rebuild comparison](rebuild-validation.json).
