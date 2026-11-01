@@ -3,10 +3,12 @@
 The maintained entry point is:
 
 ```powershell
-uv run util/sn34/build.py --keyboard battle68 --keymap default
+uv run util/sn34/cli.py build --keyboard battle68 --keymap default
 ```
 
-Windows forwards this command to WSL; Linux uses the same QMK Make backend.
+The CLI uses `uv.lock` and separate `.build/python/windows` and
+`.build/python/linux` environments. Windows forwards compilation to WSL;
+Linux uses the same QMK Make backend.
 `uv`, QMK CLI and an ARM GNU toolchain must be available. The migration has been
 compiled with GCC 13.2.1. Source and build paths currently must not contain spaces.
 
@@ -46,13 +48,26 @@ purposes; OEM updater packaging is a separate operation.
 Additional build commands:
 
 ```sh
-uv run util/sn34/build.py --keyboard battle68 --keymap minimal
-uv run util/sn34/build.py --keyboard sn34_test
-uv run tests/sn34/test_sn34_all.py --build-dir .build/sn34/battle68/default
-uv run --no-project python -m unittest discover -s tests/sn34 -p test_sn34_contracts.py
-uv run --no-project python -m unittest discover -s tests/sn34 -p test_build.py
-uv run --no-project python -m unittest discover -s tests/sn34 -p test_model.py
+uv run util/sn34/cli.py build --keyboard battle68 --keymap minimal
+uv run util/sn34/cli.py build --keyboard sn34_test
+uv run util/sn34/cli.py test
+uv run util/sn34/cli.py test --keymap minimal
+uv run util/sn34/cli.py test --keyboard sn34_test
+uv run util/sn34/cli.py test --unit-only
+uv run util/sn34/cli.py device --keyboard battle68 status
 ```
 
 `sn34_test` is a synthetic test target. It has no associated physical keyboard.
 The final migrated firmware has not yet been flashed as part of this refactor.
+
+Package an application after its required offline tests pass:
+
+```sh
+uv run util/sn34/cli.py package --build-dir .build/sn34/battle68/default
+uv run util/sn34/cli.py package --build-dir .build/sn34/battle68/default --settings-backup /path/to/application-readback.bin --updater-template /path/to/oem_updater_v118.exe
+```
+
+The updater template stays outside the repository and must match the selected
+target's recorded hash/resource contract. Settings preservation checks both
+bank CRCs and runs new-firmware startup before accepting the cache. Output goes
+to the build's `release/` directory. Synthetic targets cannot create releases.

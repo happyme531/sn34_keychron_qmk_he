@@ -1,0 +1,26 @@
+{
+  "sdk": {
+    "component": "SONiX SN34F280 SDK HAL and USB middleware",
+    "version": "2.1.4",
+    "external": true,
+    "archive_sha256": "d8334c4581aa2d531e7ae4e150fefc974d4914bb3da61ef17a90a57011a296b7",
+    "source": "https://www.sonix.com.tw/webapi/fl200010/SN34F280_SDK_V2.1.4.zip"
+  },
+  "dfp": {
+    "component": "SONiX SN34F2 DFP",
+    "version": "2.0.4",
+    "external": true
+  },
+  "cmsis": {
+    "component": "CMSIS_5 Core headers",
+    "commit": "2b7495b8535bdcb306dac29b9ded4cfb679d7e5c",
+    "external": true
+  },
+  "compiler": {
+    "component": "GNU Arm Embedded GCC",
+    "tested_version": "13.2.1 20231009",
+    "external": true
+  },
+  "newlib": {"component": "newlib headers supplied by the toolchain", "external": true},
+  "python": {"lockfile": "util/sn34/uv.lock"}
+}

@@ -1,3 +1,15 @@
+# SN34 / Battle68 QMK fork
+
+This branch adds a reusable SN34F280 platform and the Battle68 HE keyboard port
+to Keychron QMK. The SONiX SDK is supplied externally.
+
+- [Build and test](docs/sn34/build.md)
+- [Architecture and migration status](docs/sn34/architecture.md)
+- [Add another keyboard](docs/sn34/porting.md)
+
+`sn34_test` is a synthetic test target. The final refactor image still needs
+physical keyboard validation. The upstream Keychron documentation follows.
+
 # Keychron QMK Firmware
 
 [![Star this repo](https://img.shields.io/github/stars/Keychron/qmk_firmware?style=social&label=Star%20this%20repo)](https://github.com/Keychron/qmk_firmware)
