@@ -48,14 +48,14 @@ def generate_hardware(board, build, rgb_enabled=True):
     code += '}\nstatic inline void sn34_board_mux_phase(unsigned phase){\n'
     ports={}
     for bit,pin in enumerate(scan['mux_pins']):ports.setdefault(pin[0],[]).append((bit,pin[1]))
-    for port,pins in ports.items():
-        if len(pins)==1:
-            bit,pin=pins[0]
-            code += f'if(phase&(1u<<{bit})){{{gpio([port,pin],True)}}}else{{{gpio([port,pin],False)}}}\n'
+    for mux_port,mux_pins in ports.items():
+        if len(mux_pins)==1:
+            bit,pin=mux_pins[0]
+            code += f'if(phase&(1u<<{bit})){{{gpio([mux_port,pin],True)}}}else{{{gpio([mux_port,pin],False)}}}\n'
         else:
-            mask=sum(1<<pin for bit,pin in pins)
-            expression='|'.join(f'(((phase>>{bit})&1u)<<{pin})' for bit,pin in pins)
-            code += f'uint32_t mux_p{port}={expression};SN_GPIO{port}->BSET=mux_p{port};SN_GPIO{port}->BCLR=mux_p{port}^{mask}u;\n'
+            mux_mask=sum(1<<pin for bit,pin in mux_pins)
+            expression='|'.join(f'(((phase>>{bit})&1u)<<{pin})' for bit,pin in mux_pins)
+            code += f'uint32_t mux_p{mux_port}={expression};SN_GPIO{mux_port}->BSET=mux_p{mux_port};SN_GPIO{mux_port}->BCLR=mux_p{mux_port}^{mux_mask}u;\n'
     code += '}\nstatic inline void sn34_board_scan_pins_init(void){\n'
     for pin in scan['mux_pins'] + [scan['gate_pin']]:
         code += f'SN_GPIO{pin[0]}->DIR|=1u<<{pin[1]};\n'
