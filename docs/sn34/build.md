@@ -71,3 +71,22 @@ The updater template stays outside the repository and must match the selected
 target's recorded hash/resource contract. Settings preservation checks both
 bank CRCs and runs new-firmware startup before accepting the cache. Output goes
 to the build's `release/` directory. Synthetic targets cannot create releases.
+
+## Optional Launcher helper
+
+The existing official Launcher JSON-import compatibility shim is retained in
+`util/sn34/launcher`. It supplies the missing macro-buffer sizing fallback.
+It does not participate in firmware builds. To open a separate configuration
+browser profile on Windows, supply an externally installed, signed Chrome:
+
+```powershell
+./util/sn34/launcher/open_launcher.ps1 -BrowserPath 'C:/path/to/chrome.exe' -Visible
+```
+
+On ARM64 Windows, use native ARM64 Chrome. Import the generated
+`.build/sn34/battle68/default/sn34_launcher.json` in Launcher. The helper accepts
+`-Keyboard`, `-Keymap` and `-Port`; use separate ports for different keyboards.
+Its Python dependency is locked independently in `apply_compat.py.lock`.
+Browser profiles, worker state and logs stay under `.build/launcher`.
+This refactor checked the helper offline; compatibility with the live Launcher
+service has not been revalidated.

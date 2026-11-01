@@ -38,3 +38,11 @@ Default code SHA-256:
 
 These are offline results. Physical cold boot, key feel/noise, USB hosts,
 lighting waveforms, power loss and real OTA require a separate hardware run.
+Hardware flashing and acceptance are deferred by the user's delivery choice;
+the connected keyboard's existing firmware was retained.
+
+The optional Launcher helper was restored after the tested code commit.
+Its dependency-locked entry point, Python/JavaScript/PowerShell syntax and
+board-specific script rendering were checked offline. The live Launcher and
+USB interaction were not exercised in this delivery. Later source-formatting
+changes do not change the tested firmware code.

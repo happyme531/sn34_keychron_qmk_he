@@ -43,7 +43,7 @@ contains controlled test settings, not an executable OEM image.
 different EEPROM banks. Its electrical identifiers do not follow Battle68's
 numbering convention.
 
-## Validation and remaining extraction
+## Validation status
 
 The migration is implemented in stages so each behavioral boundary can be
 checked against the preceding image.
