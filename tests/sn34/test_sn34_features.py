@@ -41,7 +41,7 @@ def main():
     m=Keyboard();m.press("Fn");m.press("P");m.press("C")
     assert m.call("profile_get_current_index")==2
     m.release("C");m.release("P");m.release("Fn");m.step()
-    assert m.call("sn34_eeprom_save")>0
+    assert m.save()>0
     restored=Keyboard(bytes(m.u.mem_read(0x79000,0x5000)))
     assert restored.call("profile_get_current_index")==2
     m=Keyboard();m.call("default_layer_set",4)

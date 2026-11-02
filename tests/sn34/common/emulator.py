@@ -15,15 +15,22 @@ from elftools.elf.elffile import ELFFile
 from unicorn import Uc,UcError,UC_ARCH_ARM,UC_MODE_THUMB,UC_MODE_MCLASS,UC_HOOK_CODE,UC_PROT_READ,UC_PROT_WRITE,UC_PROT_EXEC
 from unicorn.arm_const import *
 
-from build_config import ROOT, BuildPaths
-from storage import LAYOUT
-BUILD=Path(os.environ["SN34_NATIVE_BUILD"]) if "SN34_NATIVE_BUILD" in os.environ else BuildPaths.environment().build
-MANIFEST=json.loads((BUILD/"manifest.json").read_text())
-IMAGE=(BUILD/"firmware.bin").read_bytes()
-with (BUILD/"firmware.elf").open("rb") as stream:
-    elf=ELFFile(stream)
-    SYMS={s.name:s.entry.st_value for s in elf.get_section_by_name(".symtab").iter_symbols()}
-BASE=int(MANIFEST["rom_start"],0)
+from target import ROOT, keyboard_name
+from storage import LAYOUT, read_banks
+from firmware import Firmware
+ELF_PATH=Path(os.environ.get('SN34_ELF',ROOT/'.build'/(keyboard_name().replace('/','_')+'_'+os.environ.get('SN34_KEYMAP','default')+'.elf')))
+FIRMWARE=Firmware(ELF_PATH)
+BUILD=Path(os.environ.get('SN34_NATIVE_BUILD',ROOT/'.build/sn34-tests'/ELF_PATH.stem))
+BUILD.mkdir(parents=True,exist_ok=True)
+IMAGE=FIRMWARE.code
+SYMS=FIRMWARE.addresses
+BASE=FIRMWARE.base
+for name in ('app_origin','app_size','page_size','boot_user_offset','eeprom_bank_size','eeprom_size',
+             'eeprom_base','eeprom_magic','eeprom_commit','eeprom_version','footer_page','footer_address',
+             'footer_magic','ram_origin','ram_size','bss_limit','code_limit','stack_top','eeprom_end'):
+    assert FIRMWARE.memory[name]==getattr(LAYOUT,name),name
+assert [FIRMWARE.memory['eeprom_bank0'],FIRMWARE.memory['eeprom_bank1']]==list(LAYOUT.eeprom_banks)
+
 def source_code_address(address):
     return BASE<=address<BASE+len(IMAGE)
 STOP=0x100000
@@ -65,7 +72,7 @@ class Machine:
         u=self.u
         for reg,value in zip((UC_ARM_REG_R0,UC_ARM_REG_R1,UC_ARM_REG_R2,UC_ARM_REG_R3),args):u.reg_write(reg,value)
         u.reg_write(UC_ARM_REG_SP,STACK);u.reg_write(UC_ARM_REG_LR,STOP|1)
-        try:u.emu_start(SYMS[name]|1,STOP,count=5000000 if MANIFEST.get("qmk_platform") else 2000000 if MANIFEST.get("keychron_he") else 200000)
+        try:u.emu_start(SYMS[name]|1,STOP,count=5000000)
         except UcError as exc:
             regs={f"r{i}":hex(u.reg_read(reg)) for i,reg in enumerate((UC_ARM_REG_R0,UC_ARM_REG_R1,UC_ARM_REG_R2,UC_ARM_REG_R3,UC_ARM_REG_R4))}
             raise RuntimeError({"call":name,"pc":hex(u.reg_read(UC_ARM_REG_PC)),"registers":regs,"trace":[hex(v) for v in self.trace]}) from exc
@@ -73,6 +80,31 @@ class Machine:
         assert u.reg_read(UC_ARM_REG_SP)==STACK
         assert u.reg_read(UC_ARM_REG_PRIMASK)==0
         return u.reg_read(UC_ARM_REG_R0)
+    def save(self):
+        """Drive the production page-at-a-time commit engine to completion."""
+        written = 0
+        for _ in range(LAYOUT.eeprom_size // LAYOUT.page_size + 3):
+            if not self.call('sn34_eeprom_dirty'): return written
+            result = self.call('sn34_eeprom_save_step')
+            if result == 0xffffffff: return result
+            if result: written = 1
+        raise AssertionError('EEPROM commit did not finish')
+
+    def saved_sequence(self):
+        image = bytearray(LAYOUT.app_size)
+        for bank in LAYOUT.eeprom_banks:
+            image[bank:bank + LAYOUT.eeprom_bank_size] = self.u.mem_read(bank, LAYOUT.eeprom_bank_size)
+        records = read_banks(image)
+        if not records: return 0
+        newest = records[0]['sequence']
+        for record in records[1:]:
+            if 0 < (record['sequence'] - newest) & 0xffffffff < 0x80000000:
+                newest = record['sequence']
+        return newest
+
+    def queued(self):
+        return int.from_bytes(self.u.mem_read(SYMS['queued_count'], 2), 'little')
+
     def setup(self,bm,request,value=0,index=0,length=0):
         self.u.mem_write(SCRATCH,struct.pack("<BBHHH",bm,request,value,index,length))
         return self.call("USBD_SetupStage",SYMS["device"],SCRATCH)

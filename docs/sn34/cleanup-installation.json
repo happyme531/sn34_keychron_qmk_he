@@ -1,0 +1,40 @@
+{
+  "status": "INSTALLED_USB_AND_SETTINGS_VERIFIED_USER_TYPING_PENDING",
+  "installed_at": "2026-11-01T23:18:26.9876546+08:00",
+  "hardware": {
+    "status": "FLASHED_AND_RAW_HID_SETTINGS_VERIFIED",
+    "firmware": "v2.0.0 2026-11-01-22:54:56",
+    "usb_interfaces": [
+      0,
+      1,
+      2,
+      3,
+      4
+    ],
+    "diagnostic_interface_present": false,
+    "settings_preserved": true,
+    "device_serial": "B68QMK002",
+    "physical_typing_test": "Awaiting user",
+    "live_code_readback_available": false
+  },
+  "updater": {
+    "Time": "2026-11-01T23:18:26.9876546+08:00",
+    "ProcessId": 12616,
+    "Status": "Update successfully",
+    "Progress": 100,
+    "SourceImageSHA256": "789eb716662e89b827a050c1fb614454be2ef7bdc4bdf049bde56d6393b92194",
+    "ApplicationSHA256": "4e60310ef6b26b3021f2e4a552054a916fc9e277f1a975a62b77effba0d2ba05",
+    "UpdaterSHA256": "87e9d0b2e38df45629d026cd2e5b67867cb96de3c39d6c13311e8199f135f007",
+    "Checksum": "0x1C58",
+    "RetriedAfterBootEnumeration": true
+  },
+  "backup_directory": "C:\\Users\\23020\\Downloads\\bat68fw\\sn34_qmk\\.build\\hardware\\cleanup_install_20261101_231531",
+  "original_application_sha256": "e659277987e67a2d3a4260e99185e0361e3c7cddf1687090391c16550b18b652",
+  "original_boot_sha256": "b6006ef843ef5dd4e285c9e06dc04f717326b620ce08a6dfe2b17decbd310d0e",
+  "remaining_checks": [
+    "User typing, Fn layers and HE key feel",
+    "Cold power-on and analog quality",
+    "OTA re-entry from the new firmware",
+    "Physical power interruption"
+  ]
+}

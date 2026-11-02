@@ -13,7 +13,8 @@ import json
 import struct
 from unicorn import Uc,UC_ARCH_ARM,UC_MODE_THUMB,UC_MODE_MCLASS,UC_HOOK_CODE,UC_PROT_READ,UC_PROT_WRITE,UC_PROT_EXEC
 from unicorn.arm_const import *
-from emulator import Machine,ROOT,BUILD,SYMS,IMAGE,STOP,BASE,MANIFEST
+from emulator import Machine,ROOT,BUILD,SYMS,IMAGE,STOP,BASE
+from storage import LAYOUT
 
 class Flash(Machine):
     def __init__(self,erased_byte=0,extra_pages=()):
@@ -69,23 +70,22 @@ class BootDecision:
 
 def main():
     tests=[]
-    if MANIFEST.get("qmk_platform"):
-        cold=Machine();cold.u.mem_map(0xe000e000,0x2000,UC_PROT_READ|UC_PROT_WRITE)
-        size=SYMS["__data_end"]-SYMS["__data_start"]
-        bss_size=SYMS["__bss_end"]-SYMS["__bss_start"]
-        expected=bytes(cold.u.mem_read(SYMS["__data_load"],size))
-        cold.u.mem_write(SYMS["__data_start"],bytes((0xa5,))*size)
-        cold.u.mem_write(SYMS["__bss_start"],bytes((0xa5,))*bss_size)
-        def stop_at_main(u,address,size,data):
-            if address==(SYMS["main"]&~1):u.emu_stop()
-        cold.u.hook_add(UC_HOOK_CODE,stop_at_main)
-        cold.u.reg_write(UC_ARM_REG_SP,0x20027fc0)
-        cold.u.emu_start(SYMS["native_reset"]|1,STOP,count=2000000)
-        assert cold.u.reg_read(UC_ARM_REG_PC)==(SYMS["main"]&~1)
-        assert bytes(cold.u.mem_read(SYMS["__data_start"],size))==expected
-        assert not any(cold.u.mem_read(SYMS["__bss_start"],bss_size))
-        assert cold.u.reg_read(UC_ARM_REG_PRIMASK)==1
-        tests.append("Actual cold-reset code restores all initialized data and frame-buffer pointers and clears BSS before main, with interrupts still masked")
+    cold=Machine();cold.u.mem_map(0xe000e000,0x2000,UC_PROT_READ|UC_PROT_WRITE)
+    size=SYMS["__data_end"]-SYMS["__data_start"]
+    bss_size=SYMS["__bss_end"]-SYMS["__bss_start"]
+    expected=bytes(cold.u.mem_read(SYMS["__data_load"],size))
+    cold.u.mem_write(SYMS["__data_start"],bytes((0xa5,))*size)
+    cold.u.mem_write(SYMS["__bss_start"],bytes((0xa5,))*bss_size)
+    def stop_at_main(u,address,size,data):
+        if address==(SYMS["main"]&~1):u.emu_stop()
+    cold.u.hook_add(UC_HOOK_CODE,stop_at_main)
+    cold.u.reg_write(UC_ARM_REG_SP,LAYOUT.stack_top)
+    cold.u.emu_start(SYMS["native_reset"]|1,STOP,count=2000000)
+    assert cold.u.reg_read(UC_ARM_REG_PC)==(SYMS["main"]&~1)
+    assert bytes(cold.u.mem_read(SYMS["__data_start"],size))==expected
+    assert not any(cold.u.mem_read(SYMS["__bss_start"],bss_size))
+    assert cold.u.reg_read(UC_ARM_REG_PRIMASK)==1
+    tests.append("Actual cold-reset code restores all initialized data and frame-buffer pointers and clears BSS before main, with interrupts still masked")
     for erased_byte in (0,255):
         f=Flash(erased_byte);before=bytes(f.u.mem_read(0x7d000,0x1000))
         assert f.call("sn34_flash_invalidate_application")==0
@@ -102,13 +102,6 @@ def main():
         assert m.call("sn34_flash_invalidate_application")!=0
         assert not m.events and bytes(m.u.mem_read(0x7dffc,4))==bytes.fromhex("5555aaaa")
     tests.append("Boot mapping, a stuck controller and erase failure reject entry without modifying the valid footer")
-    if "sn34_flash_validate_application" in SYMS:
-        m=Flash();assert m.call("sn34_flash_invalidate_application")==0
-        assert m.call("sn34_flash_validate_application")==0
-        assert m.events==[("erase",0x7de00),("erase",0x7de00),("program",0x7de00)]
-        assert bytes(m.u.mem_read(0x7de00,512))==bytes(508)+bytes.fromhex("5555aaaa")
-        assert bytes(m.u.mem_read(0x7d000,0xe00))==b"\x96"*0xe00
-        tests.append("Guard commit restores exactly the reserved footer page through the real SDK HAL and leaves both settings pages untouched")
     for option in (0,4):
         assert BootDecision(0xaaaa5555,option).run()=="USER_REBOOT"
         for footer in (0xffffffff,0):assert BootDecision(footer,option).run()=="USB_ISP"

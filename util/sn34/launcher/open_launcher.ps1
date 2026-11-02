@@ -44,4 +44,5 @@ if(!$workerRunning){
 }
 & uv run --locked $script --keyboard $Keyboard --port $Port
 if($LASTEXITCODE -ne 0){throw 'Launcher compatibility patch could not be attached.'}
-[PSCustomObject]@{URL='https://launcher.keychron.com/#/json';CDP="http://127.0.0.1:$Port";Definition=(Join-Path $root ".build/sn34/$Keyboard/$Keymap/sn34_launcher.json")}
+$target=$Keyboard.Replace('/','_')+'_'+$Keymap
+[PSCustomObject]@{URL='https://launcher.keychron.com/#/json';CDP="http://127.0.0.1:$Port";Definition=(Join-Path $root ".build/${target}_config/sn34_launcher.json")}

@@ -8,6 +8,7 @@ sys.path.insert(0,str(Path(__file__).resolve().parent/"common"))
 from pathlib import Path
 sys.path.insert(0,str(Path(__file__).resolve().parents[2]/"util/sn34"))
 
+from model import load_board
 import json
 import hashlib
 import random
@@ -55,11 +56,8 @@ class Native(Machine):
         self.u.mem_map(0xe000e000,0x1000,UC_PROT_READ|UC_PROT_WRITE)
         self.u.mem_map(0xe0001000,0x1000,UC_PROT_READ|UC_PROT_WRITE)
     def work(self):
-        if "native_scan_work" in SYMS:
-            return struct.unpack("<I",self.u.mem_read(SYMS["native_scan_work"],4))[0]
-        return SYMS["native_raw"]
+        return struct.unpack("<I",self.u.mem_read(SYMS["native_scan_work"],4))[0]
     def snapshot(self,output,frame):
-        if "native_scan_snapshot" in SYMS:return self.call("native_scan_snapshot",output,frame)
         changed=self.call("native_scan_acquire",SCRATCH+1024,frame)
         if changed:
             pointer=struct.unpack("<I",self.u.mem_read(SCRATCH+1024,4))[0]
@@ -97,16 +95,6 @@ def main():
     for address,expected in ((0x40027120,0xc0d0a0b),(0x40027124,0x03040102),(0x40027128,0x070e0506)):
         assert native.hw.regs[address]==expected,(hex(address),hex(native.hw.regs[address]))
     rng=random.Random(118347)
-    if "native_adc_cycles" in SYMS:
-        timestamps=[]
-        def timing_read(u,access,address,size,value,data):
-            if address in (0xe0001004,SYMS["native_usb_irq_cycles"]):
-                assert u.reg_read(UC_ARM_REG_PRIMASK)==1,"ADC/USB timing snapshots must exclude higher-priority USB preemption"
-                timestamps.append(address)
-        hook=native.u.hook_add(UC_HOOK_MEM_READ,timing_read)
-        native.hw.regs[0x4002710c]=1;native.call("ADC0_IRQHandler")
-        native.u.hook_del(hook)
-        assert timestamps.count(0xe0001004)==2 and timestamps.count(SYMS["native_usb_irq_cycles"])==2
     cases=0;mux_cases=0
     for phase in range(8):
         for trial in range(8):
@@ -126,71 +114,58 @@ def main():
                 assert native.hw.regs[port]==stock.hw.regs[port],(phase,hex(port))
             cases+=1
             mux_cases+=1
-    if "native_scan_snapshot" in SYMS or "native_scan_acquire" in SYMS:
-        coherent=Native();coherent.call("native_scan_init")
-        coherent.u.mem_write(SCRATCH,bytes(196))
-        for frame in range(2):
-            for phase in range(8):
-                coherent.hw.channels=[2200-frame*50-phase*10-i for i in range(18)]
-                work=coherent.work()
-                coherent.hw.regs[0x4002710c]=1;coherent.call("ADC0_IRQHandler")
-                if phase<7:
-                    assert coherent.snapshot(SCRATCH,SCRATCH+192)==0
-            expected=bytes(coherent.u.mem_read(work,192))
-            assert coherent.snapshot(SCRATCH,SCRATCH+192)==1
-            assert bytes(coherent.u.mem_read(SCRATCH,192))==expected
-            assert coherent.snapshot(SCRATCH,SCRATCH+192)==0
-        if "native_scan_acquire" in SYMS:
-            coherent.u.mem_write(SCRATCH+516,b"\xff"*4)
-            assert coherent.call("native_scan_acquire",SCRATCH+512,SCRATCH+516)==1
-            held=struct.unpack("<I",coherent.u.mem_read(SCRATCH+512,4))[0]
-            held_data=bytes(coherent.u.mem_read(held,192))
-            for frame in range(4):
-                for phase in range(8):
-                    work=coherent.work();assert work!=held
-                    coherent.hw.channels=[1800-frame*50-phase*10-i for i in range(18)]
-                    coherent.hw.regs[0x4002710c]=1;coherent.call("ADC0_IRQHandler")
-                    assert bytes(coherent.u.mem_read(held,192))==held_data
-            newest=bytes(coherent.u.mem_read(work,192))
-            coherent.call("native_scan_release")
-            assert coherent.call("native_scan_acquire",SCRATCH+512,SCRATCH+516)==1
-            current=struct.unpack("<I",coherent.u.mem_read(SCRATCH+512,4))[0]
-            assert bytes(coherent.u.mem_read(current,192))==newest
-            coherent.call("native_scan_release")
-    if "native_scan_configure" in SYMS:
-        # Reconfigure only at a complete-frame boundary, and restore all 15
-        # original ranks when leaving compact mode, including through mode 0.
-        mapping=json.loads((BUILD/"board.json").read_text())
-        used={key["raw_slot"] for key in mapping};coverage=set()
-        for mode in (0,7,3,1,7,0,1):
-            assert native.call("native_scan_configure",mode)==0
-            for phase in range(8):
-                native.u.mem_write(SYMS["native_scan_phase"],bytes((phase,)))
-                native.hw.regs[0x4002710c]=1;native.call("ADC0_IRQHandler")
-                if phase==7:
-                    assert native.u.mem_read(SYMS["native_scan_mode"],1)[0]==mode
-                active=native.u.mem_read(SYMS["native_scan_mode"],1)[0]
-                if active==7:
-                    next_phase=(phase+1)&7;upper=next_phase>>2;pair=(next_phase&3)*2
-                    wiring=((10,11,12,13),(1,2,3,4),(5,6,7,14))
-                    live={wiring[group][lane^upper]:group*32+upper*16+(lane>>1)*8+pair+(lane&1)
-                          for group in range(3) for lane in range(4)
-                          if group*32+upper*16+(lane>>1)*8+pair+(lane&1) in used}
-                    coverage.update(live.values())
-                    count=((native.hw.regs[0x40027100]>>16)&31)+1
-                    ranks=[(native.hw.regs[0x40027120+(i//4)*4]>>((i%4)*8))&31 for i in range(count)]
-                    assert ranks[0]==11 and set(ranks[1:])==set(live) and len(ranks)==len(live)+1
-                elif phase==7:
-                    assert (native.hw.regs[0x40027100]>>16)&31==(12 if mode==3 else 14)
-        assert coverage==used,"Phase-specific ADC sequences must cover every physical switch"
-        assert native.call("native_scan_configure",2)==0xffffffff
+    coherent=Native();coherent.call("native_scan_init")
+    coherent.u.mem_write(SCRATCH,bytes(196))
+    for frame in range(2):
+        for phase in range(8):
+            coherent.hw.channels=[2200-frame*50-phase*10-i for i in range(18)]
+            work=coherent.work()
+            coherent.hw.regs[0x4002710c]=1;coherent.call("ADC0_IRQHandler")
+            if phase<7:
+                assert coherent.snapshot(SCRATCH,SCRATCH+192)==0
+        expected=bytes(coherent.u.mem_read(work,192))
+        assert coherent.snapshot(SCRATCH,SCRATCH+192)==1
+        assert bytes(coherent.u.mem_read(SCRATCH,192))==expected
+        assert coherent.snapshot(SCRATCH,SCRATCH+192)==0
+    coherent.u.mem_write(SCRATCH+516,b"\xff"*4)
+    assert coherent.call("native_scan_acquire",SCRATCH+512,SCRATCH+516)==1
+    held=struct.unpack("<I",coherent.u.mem_read(SCRATCH+512,4))[0]
+    held_data=bytes(coherent.u.mem_read(held,192))
+    for frame in range(4):
+        for phase in range(8):
+            work=coherent.work();assert work!=held
+            coherent.hw.channels=[1800-frame*50-phase*10-i for i in range(18)]
+            coherent.hw.regs[0x4002710c]=1;coherent.call("ADC0_IRQHandler")
+            assert bytes(coherent.u.mem_read(held,192))==held_data
+    newest=bytes(coherent.u.mem_read(work,192))
+    coherent.call("native_scan_release")
+    assert coherent.call("native_scan_acquire",SCRATCH+512,SCRATCH+516)==1
+    current=struct.unpack("<I",coherent.u.mem_read(SCRATCH+512,4))[0]
+    assert bytes(coherent.u.mem_read(current,192))==newest
+    coherent.call("native_scan_release")
+    mapping=load_board()['keys']
+    used={key['raw_slot'] for key in mapping};coverage=set()
+    # Generation overflow must not re-enter the full-channel startup sequence.
+    native.u.mem_write(SYMS['native_scan_frames'],bytes.fromhex('ffffffff'))
+    for next_phase in range(8):
+        native.u.mem_write(SYMS['native_scan_phase'],bytes(((next_phase-1)%8,)))
+        native.hw.regs[0x4002710c]=1;native.call('ADC0_IRQHandler')
+        upper=next_phase>>2;pair=(next_phase&3)*2
+        wiring=((10,11,12,13),(1,2,3,4),(5,6,7,14))
+        live={wiring[group][lane^upper]:group*32+upper*16+(lane>>1)*8+pair+(lane&1)
+              for group in range(3) for lane in range(4)
+              if group*32+upper*16+(lane>>1)*8+pair+(lane&1) in used}
+        coverage.update(live.values())
+        count=((native.hw.regs[0x40027100]>>16)&31)+1
+        ranks=[(native.hw.regs[0x40027120+(i//4)*4]>>((i%4)*8))&31 for i in range(count)]
+        assert ranks[0]==11 and set(ranks[1:])==set(live) and len(ranks)==len(live)+1
+    assert coverage==used,'Phase-specific ADC ranks must cover every physical switch'
     result={"status":"PASS_OFFLINE_NOT_FLASHED","image_sha256":hashlib.sha256(IMAGE).hexdigest(),"adc_scatter_equivalence_cases":cases,"mux_gpio_equivalence_cases":mux_cases,
             "sdk_adc_init_executed":True,"tests":["Official HAL ADC init/calibration and 15-channel sequence",
             "All eight native raw-scan phases match the captured v1.18 ISR results", "Mux pins match v1.18 function 0x450c"]+
-            (["Only complete eight-phase frames are published and consumed once"] if "native_scan_snapshot" in SYMS or "native_scan_acquire" in SYMS else [])+
-            (["A leased frame remains byte-exact through four producer frames; after release the consumer receives the newest complete frame",
-              "Phase-specific ADC ranks retain a dummy conversion and cover all 67 physical switches exactly once per frame",
-              "Both ADC/USB timestamp pairs are captured with interrupts masked, preventing nested-IRQ double accounting"] if "native_scan_acquire" in SYMS else []),
+            ["Only complete eight-phase frames are published and consumed once",
+             "A leased frame remains byte-exact through four producer frames; after release the consumer receives the newest complete frame",
+             "Phase-specific ADC ranks retain a dummy conversion and cover all 67 physical switches exactly once per frame"],
             "limits":["ADC completion is modeled; analog behavior, timing and actual readings require hardware validation"]}
     (BUILD/"scan_test_results.json").write_text(json.dumps(result,indent=2),encoding="utf-8")
     print(json.dumps(result,indent=2))

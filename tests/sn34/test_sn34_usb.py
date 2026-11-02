@@ -12,9 +12,14 @@ import json
 import hashlib
 import struct
 import re
+from elftools.elf.elffile import ELFFile
 from test_bat68 import Keyboard,BUILD,IMAGE,SYMS,SCRATCH,NAMES,PROFILES,KEYS,CURVE_STEPS
 from emulator import source_code_address
-from build_config import ROOT
+from target import ROOT
+from model import load_board
+from emulator import FIRMWARE
+from export import definitions
+from storage import LAYOUT
 
 
 def hid_sizes(desc):
@@ -34,20 +39,26 @@ def hid_sizes(desc):
 
 def main():
     tests=[];m=Keyboard()
+    with FIRMWARE.path.open('rb') as stream:
+        symbols=list(ELFFile(stream).get_section_by_name('.symtab').iter_symbols())
+    table=[symbol for symbol in symbols if symbol.name=='board_keys']
+    assert len(table)==1 and table[0].entry.st_size==67*8
+    assert not {'sn34_diagnostic','native_scan_configure','native_scan_snapshot',
+                'sn34_usb_diagnostics','sn34_flash_validate_application','native_log_calls'} & SYMS.keys()
+    tests.append('One shared board table; custom diagnostic and profiling entry points are absent')
     compat=json.loads((ROOT/"tests/sn34/boards/battle68/fixtures/sn34_v36_compatibility.json").read_text(encoding="utf-8"))
-    assert hashlib.sha256((BUILD/"rgb_protocol.json").read_bytes()).hexdigest()==compat["rgb_protocol_sha256"]
+    assert hashlib.sha256(json.dumps(FIRMWARE.rgb_protocol,indent=2).encode()).hexdigest()==compat["rgb_protocol_sha256"]
     vectors=struct.unpack_from("<112I",IMAGE)
-    assert vectors[0]==0x20027fc0 and vectors[1]==SYMS["sn34_reset_entry"]
+    assert vectors[0]==LAYOUT.stack_top and vectors[1]==SYMS["sn34_reset_entry"]
     for irq,name in ((3,"SCU_IRQHandler"),(18,"ADC0_IRQHandler"),(56,"DMA1_CH0_IRQHandler"),(77,"USB_HS_IRQHandler")):
         assert vectors[16+irq]==SYMS[name],(irq,name)
     assert all(source_code_address(value&~1) for value in vectors[1:])
-    via=json.loads((BUILD/"sn34_via.json").read_text())
+    via,launcher=definitions(FIRMWARE)
     keys=[s for row in via["layouts"]["keymap"] for s in row if isinstance(s,str)]
-    mapping=json.loads((BUILD/"board.json").read_text())
+    mapping=load_board()["keys"]
     assert len(keys)==len(set(keys))==67
     assert set(keys)=={f"{k['matrix'][0]},{k['matrix'][1]}" for k in mapping}
     tests.append("All interrupt vectors reference source code; VIA definition exposes exactly the 67 configured switch positions")
-    launcher=json.loads((BUILD/"sn34_launcher.json").read_text())
     assert launcher["feature"]==["HE"] and launcher["vendorProductId"]==(0x0c45<<16|0x8037)
     assert {(k["row"],k["col"]) for k in launcher["layouts"]["keys"]}=={tuple(k["matrix"]) for k in mapping}
     assert launcher["layers"]==["主层","Fn","苹果主层","苹果 Fn"]
@@ -88,7 +99,7 @@ def main():
     assert m.raw_command(bytes((0xa9,0x15,0,0,r,c,0)))[2]==0
     tests.append("Launcher key test reads the physical Hall matrix even for gamepad keys; read-only HE queries work while held and NKRO changes wait for release")
     assert m.setup(0x80,6,0x0200,0,512)==0
-    config=m.transfers[-1][1];assert config[4]==6
+    config=m.transfers[-1][1];assert config[4]==5
     assert struct.unpack_from("<H",config,2)[0]==len(config)
     at=0;interfaces=[];eps=[]
     while at<len(config):
@@ -96,21 +107,24 @@ def main():
         if t==4:interfaces.append(config[at+2])
         if t==5:eps.append(config[at+2])
         at+=n
-    assert interfaces==list(range(6)) and eps==[0x81,0x82,0x83,3,0x85,5,0x86,6],(interfaces,eps)
-    expected={0:{0:8},1:{2:6,3:3,4:3,6:32,7:11},4:{0:32}}
+    assert interfaces==list(range(5)) and eps==[0x81,0x82,0x85,5,0x86,6],(interfaces,eps)
+    expected={0:{0:8},1:{2:6,3:3,4:3,6:32,7:11},3:{0:32}}
     for interface,sizes in expected.items():
         assert m.setup(0x81,6,0x2200,interface,1024)==0
         inputs,outputs=hid_sizes(m.transfers[-1][1]);assert inputs==sizes,(interface,inputs)
         if interface==1:assert outputs=={6:2}
+        assert bytes.fromhex("0668ff") not in m.transfers[-1][1]
     assert m.setup(0x80,6,0x03ee,0x0409,18)==0
     assert m.transfers[-1][1][2:16]=="MSFT100".encode("utf-16le")
     assert m.setup(0xc0,0x20,0,4,40)==0
-    compat=m.transfers[-1][1];assert len(compat)==40 and compat[16]==5 and compat[18:24]==b"XUSB10"
-    tests.append("Six USB interfaces and exact report sizes, plus a distinct XUSB vendor interface and Microsoft compatible-ID descriptors")
+    compat=m.transfers[-1][1];assert len(compat)==40 and compat[16]==4 and compat[18:24]==b"XUSB10"
+    tests.append("Five USB interfaces and exact report sizes, plus a distinct XUSB vendor interface and Microsoft compatible-ID descriptors")
     actual=Keyboard(real_usb_endpoints=True)
-    assert len([x for x in actual.endpoints if x[0]&15])==8,actual.endpoints
+    assert len([x for x in actual.endpoints if x[0]&15])==6,actual.endpoints
+    assert actual.call("HAL_PCD_EP_Open",SYMS["hPCD"],3,64,3)==0
+    assert actual.call("HAL_PCD_EP_Open",SYMS["hPCD"],0x83,64,3)==0
     assert actual.call("HAL_PCD_EP_Open",SYMS["hPCD"],4,64,3)!=0
-    tests.append("Real PCD HAL and OTGPE allocator configure all eight hardware FIFOs and reject a ninth endpoint")
+    tests.append("Real PCD HAL and OTGPE allocator use six hardware FIFOs; two remain available and a ninth endpoint is rejected")
     recovery=Keyboard(real_usb_endpoints=True,configure=False)
     recovery.step(4987)
     assert bytes(recovery.u.mem_read(SYMS["enumeration_phase"],1))==b"\0"
@@ -132,13 +146,18 @@ def main():
     assert recovery.setup(0,5,7)==0 and recovery.setup(0,9,1)==0
     before=len(recovery.usb_link);recovery.step(20000)
     assert len(recovery.usb_link)==before
-    recovery.call("sn34_usb_diagnostics",SCRATCH)
-    diag=bytes(recovery.u.mem_read(SCRATCH,24))
-    assert diag[0]==1 and diag[3:6]==bytes((2,1,0)) and struct.unpack_from("<I",diag,8)[0]>=1
     failed=Keyboard(configure=False);failed.step(5000);failed.step(300)
     before=len(failed.usb_link);failed.step(20000);assert len(failed.usb_link)==before
     before=len(m.usb_link);m.step(20000);assert len(m.usb_link)==before
-    tests.append("Initial enumeration failure detaches for 300 ms then retries once at Full Speed; all eight real FIFOs reconfigure after reset, diagnostics record recovery and healthy links never retry")
+    tests.append("Initial enumeration failure detaches for 300 ms then retries once at Full Speed; all endpoints reconfigure after reset and healthy links never retry")
+    ota=Keyboard()
+    assert ota.setup(0x21,9,0x0300,2,8)==0
+    ep,buffer,size=ota.receives[-1]
+    assert ep==0 and size==8
+    ota.u.mem_write(buffer,bytes.fromhex('aa55a55aff0033cc'))
+    ota.call('HAL_PCD_DataOutStageCallback',0,0)
+    assert ota.u.mem_read(SYMS['native_boot_requested'],1)==bytes((1,))
+    tests.append('The OTA Feature report still requests Bootloader entry through its renumbered interface')
     assert m.call("rgb_matrix_is_enabled")==1 and m.call("rgb_matrix_get_val")==32
     tests.append("RGB starts enabled at brightness 32 with the solid-color default")
     def rendered_frame():
@@ -157,8 +176,8 @@ def main():
     assert m.call("rgb_matrix_get_val")==255
     assert m.spi[-1][120:-120]==bytes((0xee,))*(67*12),"Full white must encode FF FF FF for every LED"
     tests.append("VIA brightness 255 and solid white produce exact 0xFFFFFF GRB data for all 67 LEDs without a hidden brightness cap")
-    effects=json.loads((BUILD/"rgb_effects.json").read_text())
-    rgb_protocol=json.loads((BUILD/"rgb_protocol.json").read_text())
+    effects=[p['name'] for p in sorted(FIRMWARE.rgb_protocol,key=lambda p:p['core']) if p['core']]
+    rgb_protocol=FIRMWARE.rgb_protocol
     options=launcher["menus"][0]["content"][0]["content"][1]["options"]
     assert len(effects)==48 and [o[1] for o in options]==list(range(23))+list(range(25,51))
     assert via["menus"]==launcher["menus"]

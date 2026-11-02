@@ -59,7 +59,7 @@ def main():
     m.press("Win");assert not m.pressed(0xe3);m.release("Win")
     m.remap("S",0x7e1f);m.press("S");m.release("S")
     assert int.from_bytes(m.u.mem_read(SYMS["default_layer_state"],1),"little")==4
-    m.step();m.call("sn34_eeprom_save")
+    m.step();m.save()
     loaded=Keyboard(bytes(m.u.mem_read(0x79000,0x5000)))
     assert int.from_bytes(loaded.u.mem_read(SYMS["default_layer_state"],1),"little")==4
     # Unlock from a key on the Mac layer, then verify physical Option/Command.
@@ -84,22 +84,21 @@ def main():
     m=PollingClock();m.complete=False;m.press("A")
     m.u.mem_write(SCRATCH,bytes(32));m.poll_clock=True
     for _ in range(270):m.call("host_raw_hid_send",SCRATCH,32)
-    assert int.from_bytes(m.u.mem_read(SYMS["sn34_report_overflows"],4),"little")>0
+    assert m.queued() == 160
     m.poll_clock=False;m.complete=True;m.drain()
-    assert m.call("sn34_host_queued")==0 and m.pressed(4)
+    assert m.queued()==0 and m.pressed(4)
     m.release("A");m.press("S");assert m.pressed(0x16);m.release("S")
-    tests.append("Raw HID backpressure is bounded and counted without clearing a still-held physical key")
+    tests.append("Raw HID backpressure is bounded without clearing a still-held physical key")
     # Reproduce a stalled configuration endpoint with exactly 160 queued
     # reports. It must neither block the independent keyboard endpoint nor
     # gate keyboard_task before the ADC samples reach HE.
     m=Keyboard();m.complete=False;m.u.mem_write(SCRATCH,bytes(32))
     for _ in range(161):m.call("host_raw_hid_send",SCRATCH,32)
-    assert m.call("sn34_host_queued")==160
+    assert m.queued()==160
     assert m.call("sn34_host_ready")==1
     m.press("A");assert m.pressed(4)
     m.call("HAL_PCD_DataInStageCallback",0,0x82);m.release("A");assert not m.pressed(4)
-    assert m.call("sn34_host_queued")==160
-    assert int.from_bytes(m.u.mem_read(SYMS["sn34_report_overflows"],4),"little")==0
+    assert m.queued()==160
     tests.append("A stalled Raw HID endpoint with 160 pending replies does not suppress ADC processing or keyboard press/release")
     # Axis samples can be replaced, but every gamepad button transition must
     # remain ordered. Only the pending tail with unchanged buttons coalesces.
@@ -107,11 +106,10 @@ def main():
     for axis in range(20):
         packet=bytearray(20);packet[1]=20;packet[6]=axis
         m.u.mem_write(SCRATCH,bytes(packet));m.call("host_xinput_send",SCRATCH)
-    assert m.call("sn34_host_queued")==1
-    assert int.from_bytes(m.u.mem_read(SYMS["sn34_axis_coalesced"],4),"little")==18
+    assert m.queued()==1
     for buttons in (1,0):
         packet[2]=buttons;m.u.mem_write(SCRATCH,bytes(packet));m.call("host_xinput_send",SCRATCH)
-    assert m.call("sn34_host_queued")==3
+    assert m.queued()==3
     m.complete=True;m.drain()
     x=[p for ep,p in m.transfers if ep==0x86]
     assert [p[2] for p in x[-3:]]==[0,1,0]
@@ -122,7 +120,7 @@ def main():
     r,c=NAMES["W"]["matrix"]
     assert m.raw_command(bytes((0xa9,0x15,0,2,r,c,3)))[2]==0
     assert m.raw_command(bytes((0xa9,0x1f,0)))[2]==0
-    m.step();m.call("sn34_eeprom_save");loaded=Keyboard(bytes(m.u.mem_read(0x79000,0x5000)))
+    m.step();m.save();loaded=Keyboard(bytes(m.u.mem_read(0x79000,0x5000)))
     values=[]
     for keyboard in (m,loaded):
         start=len(keyboard.transfers);keyboard.travel("W",150)

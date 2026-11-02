@@ -1,0 +1,50 @@
+{
+  "updater": {
+    "kind": "sonix_rcdata",
+    "template_sha256": "e49a1f88b497790638dadf1a82034ee646b3c34e9a0a97d63d492698c600f523",
+    "application_resource": 4000,
+    "checksum_resource": 4014
+  },
+  "keymap_tests": {
+    "minimal": [
+      {
+        "script": "test_sn34_hooks.py",
+        "result": "board_hooks_test_results.json"
+      }
+    ]
+  },
+  "tests": [
+    {
+      "script": "test_bat68.py",
+      "result": "platform_test_results.json"
+    },
+    {
+      "script": "test_sn34_features.py",
+      "result": "feature_test_results.json"
+    },
+    {
+      "script": "test_sn34_usb.py",
+      "result": "usb_lighting_test_results.json"
+    },
+    {
+      "script": "test_storage.py",
+      "result": "storage_test_results.json"
+    },
+    {
+      "script": "test_sn34_lifecycle.py",
+      "result": "lifecycle_test_results.json"
+    },
+    {
+      "script": "test_native_scan.py",
+      "result": "scan_test_results.json"
+    },
+    {
+      "script": "test_native_boot.py",
+      "result": "boot_test_results.json"
+    },
+    {
+      "script": "test_keychron_eeprom.py",
+      "result": "eeprom_test_results.json"
+    }
+  ]
+}

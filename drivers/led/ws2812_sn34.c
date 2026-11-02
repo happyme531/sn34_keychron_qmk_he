@@ -1,20 +1,17 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
-// BAT68 WS2812: original SPI1 timing (3 MHz, four encoded bits per LED bit),
+// SN34 WS2812: SPI1 timing (3 MHz, four encoded bits per LED bit),
 // driven by DMA1 channel 0. Physical order remains a board-validation item.
 #include "quantum.h"
 #include "rgb_matrix.h"
-#include "analog_matrix.h"
 #include "sn34f28x_hal.h"
 #include "ll_gpio_afio.h"
-#include "hardware.generated.h"
-#include "rgb.generated.h"
+#include "wiring.h"
 enum { RESET_BYTES=120,FRAME_BYTES=RESET_BYTES*2+RGB_MATRIX_LED_COUNT*12 };
 static SPI_Handle_T rgb_spi;
 static DMA_Handle_T rgb_dma;
 static uint8_t colors[RGB_MATRIX_LED_COUNT][3],encoded[FRAME_BYTES];
 static volatile bool busy;
 static bool initialized;
-uint32_t sn34_rgb_frames,sn34_rgb_errors;
 
 void HAL_DMA_MspInit(DMA_Handle_T *h){
     if(h!=&rgb_dma)return;
@@ -27,8 +24,8 @@ void HAL_SPI_MspInit(SPI_Handle_T *h){
     __HAL_RCC_SSP1_CLK_ENABLE();__HAL_RCC_SSP1_RESET();__HAL_RCC_SET_SSP1_CLKSEL(RCC_SPI_CLKSEL_HCLK);
     sn34_board_rgb_pins();
 }
-void HAL_SPI_TxCpltCallback(SPI_Handle_T *h){if(h==&rgb_spi){busy=false;sn34_rgb_frames++;}}
-void HAL_SPI_ErrorCallback(SPI_Handle_T *h){if(h==&rgb_spi){busy=false;sn34_rgb_errors++;}}
+void HAL_SPI_TxCpltCallback(SPI_Handle_T *h){if(h==&rgb_spi){busy=false;}}
+void HAL_SPI_ErrorCallback(SPI_Handle_T *h){if(h==&rgb_spi){busy=false;}}
 static void init(void){
     rgb_dma.instance=SN_DMA1;
     rgb_dma.init=(DMA_Init_T){.channel=DMA_CHANNEL_0,.ch_xfer_mode=DMA_MEMORY_TO_PERIPH,
@@ -36,12 +33,12 @@ static void init(void){
         .src_burst=DMA_SRC_BURST_1,.src_width=DMA_XFR_WIDTH_8BITS,.src_addr_mode=DMA_ADDR_MODE_INC,
         .src_ahb_master=DMA_AHB_MASTER_MATRIX,.dst_rs=DMA_RS1_SSP1_TX,.dst_width=DMA_XFR_WIDTH_8BITS,
         .dst_addr_mode=DMA_ADDR_MODE_FIXED,.dst_ahb_master=DMA_AHB_MASTER_PERIPH};
-    if(HAL_DMA_Init(&rgb_dma)!=HAL_OK){sn34_rgb_errors++;return;}
+    if(HAL_DMA_Init(&rgb_dma)!=HAL_OK){return;}
     rgb_spi.instance=(SN_SPI0_Type*)SN_SPI1;rgb_spi.hdmatx=&rgb_dma;
     rgb_spi.init=(SPI_Init_T){.frame_format=SPI_FFMT_SPI,.mode=SPI_MODE_MASTER,.data_size=8,
         .fs_polarity=SPI_FS_POLARITY_LOW,.clk_polarity=SPI_CLK_POLARITY_LOW,.clk_phase=SPI_CLK_PHASE_1EDGE,
         .sclk_div=SN34_RGB_SPI_DIVIDER,.first_bit=SPI_FIRST_BIT_MSB,.tx_default=0};
-    if(HAL_SPI_Init(&rgb_spi)!=HAL_OK){sn34_rgb_errors++;return;}
+    if(HAL_SPI_Init(&rgb_spi)!=HAL_OK){return;}
     initialized=true;
 }
 static void set_color(int index,uint8_t r,uint8_t g,uint8_t b){
@@ -58,7 +55,6 @@ static void flush(void){
         for(int shift=6;shift>=0;shift-=2)encoded[at++]=lookup[(v>>shift)&3];
     }
     busy=true;
-    if(HAL_SPI_Transmit_DMA(&rgb_spi,encoded,sizeof(encoded))!=HAL_OK){busy=false;sn34_rgb_errors++;}
+    if(HAL_SPI_Transmit_DMA(&rgb_spi,encoded,sizeof(encoded))!=HAL_OK){busy=false;}
 }
 const rgb_matrix_driver_t rgb_matrix_driver={.init=init,.set_color=set_color,.set_color_all=set_all,.flush=flush};
-bool rgb_matrix_indicators_kb(void){analog_matrix_indicator();return rgb_matrix_indicators_user();}

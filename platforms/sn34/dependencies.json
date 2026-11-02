@@ -21,6 +21,6 @@
     "tested_version": "13.2.1 20231009",
     "external": true
   },
-  "newlib": {"component": "newlib headers supplied by the toolchain", "external": true},
-  "python": {"lockfile": "util/sn34/uv.lock"}
+  "newlib": {"component": "newlib-nano headers, libraries, nano.specs and nosys.specs supplied by the ARM toolchain", "external": true},
+  "host_tools": {"dependencies": "uv inline script metadata; no SN34 Python build dependency"}
 }

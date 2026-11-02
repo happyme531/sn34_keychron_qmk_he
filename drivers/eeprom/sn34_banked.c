@@ -22,7 +22,6 @@ static header_t staged_header;
 static int staged_bank=-1;
 static unsigned staged_page;
 static uint32_t staged_revision;
-uint32_t sn34_flash_pages,sn34_flash_commits,sn34_flash_max_page_ms;
 
 static uint32_t crc32(const void *source, unsigned size) {
     const uint8_t *p = source; uint32_t crc = ~0u;
@@ -31,7 +30,7 @@ static uint32_t crc32(const void *source, unsigned size) {
 }
 static bool valid(unsigned bank) {
     const header_t *h = (const header_t *)(banks[bank] + EEPROM_SIZE);
-    return h->magic == MAGIC && h->version == FORMAT_VERSION && h->size == EEPROM_SIZE && h->commit == COMMIT &&
+    return h->magic == MAGIC && (h->version == FORMAT_VERSION || h->version == 1) && h->size == EEPROM_SIZE && h->commit == COMMIT &&
            h->header_crc == crc32(h, offsetof(header_t, header_crc)) &&
            h->crc == crc32((const void *)banks[bank], EEPROM_SIZE);
 }
@@ -71,21 +70,20 @@ void eeprom_write_##name(type *p, type v) { eeprom_update_##name(p, v); }
 EEPROM_SCALAR(uint8_t, byte)
 EEPROM_SCALAR(uint16_t, word)
 EEPROM_SCALAR(uint32_t, dword)
-void eeprom_driver_init(void) {}
+void eeprom_driver_init(void) { sn34_eeprom_init(); }
 void eeprom_driver_erase(void) {
     memset(cache, 0, sizeof(cache));cached_dirty=true;
     sn34_eeprom_revision++;staged_bank=-1;
 }
 void eeprom_driver_format(bool erase) { (void)erase; eeprom_driver_erase(); }
 bool sn34_eeprom_dirty(void) { return cached_dirty; }
-uint32_t sn34_eeprom_sequence(void) { return sequence; }
+uint32_t sn34_eeprom_version(void) {
+    return current < 0 ? FORMAT_VERSION : ((const header_t *)(banks[current] + EEPROM_SIZE))->version;
+}
 static int save_page(uint32_t offset,const void *data){
-    uint32_t started=HAL_GetTick(),irq=__get_PRIMASK();__disable_irq();
+    uint32_t irq=__get_PRIMASK();__disable_irq();
     int result=sn34_flash_write_eeprom_page(offset,data);
     __set_PRIMASK(irq);
-    uint32_t duration=HAL_GetTick()-started;
-    if(duration>sn34_flash_max_page_ms)sn34_flash_max_page_ms=duration;
-    sn34_flash_pages++;
     return result || memcmp((const void *)offset,data,PAGE_SIZE)?-1:0;
 }
 // Background saves perform at most one physical page write per call. The
@@ -108,13 +106,6 @@ int sn34_eeprom_save_step(void) {
     }
     unsigned target=staged_bank;
     if(save_page(banks[target]+EEPROM_SIZE,&staged_header) || !valid(target)) {staged_bank=-1;return -1;}
-    current=target;sequence=staged_header.sequence;cached_dirty=false;staged_bank=-1;sn34_flash_commits++;
+    current=target;sequence=staged_header.sequence;cached_dirty=false;staged_bank=-1;
     return 1;
-}
-int sn34_eeprom_save(void) {
-    int written=0;
-    while(sn34_eeprom_dirty()){
-        int result=sn34_eeprom_save_step();if(result<0)return result;if(result>0)written=1;
-    }
-    return written;
 }

@@ -8,18 +8,17 @@ sys.path.insert(0,str(Path(__file__).resolve().parent/"common"))
 from pathlib import Path
 sys.path.insert(0,str(Path(__file__).resolve().parents[2]/"util/sn34"))
 
-import os
-os.environ.setdefault("SN34_NATIVE_BUILD", "build/keychron_he")
 import hashlib
 import json
 from test_native_boot import Flash
-from emulator import BUILD, IMAGE, SCRATCH, SYMS,MANIFEST
+from emulator import BUILD, IMAGE, SCRATCH, SYMS
 from unicorn import UC_PROT_READ, UC_PROT_EXEC
+from storage import LAYOUT
 
-SIZE = MANIFEST.get("he_eeprom_bytes",3584)
-BANK_SIZE=SIZE+512
-BASE=0x79000 if MANIFEST.get("qmk_platform") else 0x7b000
-PAGES = tuple(range(BASE,0x7d000,512))
+SIZE = LAYOUT.eeprom_size
+BANK_SIZE=LAYOUT.eeprom_bank_size
+BASE=min(LAYOUT.eeprom_banks)
+PAGES = tuple(bank+offset for bank in LAYOUT.eeprom_banks for offset in range(0,BANK_SIZE,LAYOUT.page_size))
 HALF=len(PAGES)//2
 
 
@@ -53,17 +52,17 @@ def main():
     new = bytes((i*19+3)&255 for i in range(SIZE))
     for erased in (0,255):
         m = Eeprom(erased); m.stage(old)
-        assert m.call("sn34_eeprom_save") == 1
+        assert m.save() == 1
         assert m.events == [(op,page) for page in PAGES[:HALF] for op in ("erase","program")]
-        assert m.call("sn34_eeprom_save") == 0 and len(m.events) == HALF*2
+        assert m.save() == 0 and len(m.events) == HALF*2
         saved = bytes(m.u.mem_read(BASE,BANK_SIZE*2))
-        m.stage(new); assert m.call("sn34_eeprom_save") == 1
+        m.stage(new); assert m.save() == 1
         m.call("sn34_eeprom_init"); assert m.cache() == new
-        assert m.call("sn34_eeprom_sequence") == 2
+        assert m.saved_sequence() == 2
         # Both the payload and header metadata are integrity checked.
         m.u.mem_write(BASE+BANK_SIZE+SIZE+8,b"\xff"*4)
         m.call("sn34_eeprom_init"); assert m.cache() == old
-        assert m.call("sn34_eeprom_sequence") == 1
+        assert m.saved_sequence() == 1
         # Simulate interruption at every erase/program boundary in the inactive
         # bank through the real HAL error path, then perform a fresh cache load.
         for page in PAGES[HALF:]:
@@ -71,10 +70,10 @@ def main():
                 m.u.mem_write(BASE,saved)
                 m.call("sn34_eeprom_init"); m.stage(new)
                 m.fail_at = (page,command)
-                assert m.call("sn34_eeprom_save") == 0xffffffff,(page,command)
+                assert m.save() == 0xffffffff,(page,command)
                 m.call("sn34_eeprom_init")
                 assert m.cache() == old,(erased,page,command)
-                assert m.call("sn34_eeprom_sequence") == 1
+                assert m.saved_sequence() == 1
                 m.fail_at = None
         assert bytes(m.u.mem_read(0,len(IMAGE))) == IMAGE
         assert bytes(m.u.mem_read(0x7d000,0xe00)) == b"\x96"*0xe00

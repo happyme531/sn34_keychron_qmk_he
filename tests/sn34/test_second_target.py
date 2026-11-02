@@ -2,7 +2,6 @@
 # dependencies = ["unicorn", "pyelftools", "capstone"]
 # ///
 """Execute the synthetic board through the same QMK/HE/USB implementation."""
-import argparse
 import hashlib
 import json
 import os
@@ -12,12 +11,7 @@ sys.path[:0]=[str(Path(__file__).resolve().parents[2]/'util/sn34'),str(Path(__fi
 
 
 def main():
-    parser=argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('--build-dir',type=Path,default=Path('.build/sn34/sn34_test/default'))
-    args=parser.parse_args()
-    root=Path(__file__).resolve().parents[2]
     os.environ['SN34_KEYBOARD']='sn34_test'
-    os.environ['SN34_NATIVE_BUILD']=str((root/args.build_dir).resolve())
     from keyboard import Keyboard,KEYS,NAMES,BUILD,IMAGE,SYMS
     from model import load_board
     from storage import LAYOUT
@@ -53,9 +47,9 @@ def main():
     result={'status':'PASS_OFFLINE_NOT_FLASHED','image_sha256':hashlib.sha256(IMAGE).hexdigest(),
             'keys_exercised':tested,'matrix':[3,5],'sample_count':16,'mux_phases':2,'led_count':5,
             'tests':['All ordinary synthetic keys traverse sample -> HE -> QMK -> USB and release cleanly',
-                     'RGB, XInput, diagnostics and OTA interfaces are omitted; Raw HID remains correctly routed',
+                     'RGB, XInput and OTA interfaces are omitted; Raw HID remains correctly routed',
                      'A remap survives cache save and a fresh firmware instance with the synthetic storage layout',
-                     'The independent key, sampling, LED and electrical identities are accepted by the shared implementation']}
+                     'Independent sampling slots and QMK matrix/LED mappings are accepted by the shared implementation']}
     (BUILD/'second_target_test_results.json').write_text(json.dumps(result,indent=2)+'\n',encoding='utf-8')
     print(json.dumps(result,indent=2))
 

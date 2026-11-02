@@ -1,74 +1,73 @@
 # SN34 QMK platform
 
-This fork starts from Keychron QMK `2025q3`, commit
-`2b493ff95f2665db719b1e95c91babb5036e72f3`. The import commit preserves the
-development workspace sources. Historical probe, bridge and standalone trial
-implementations are available in that commit; they are not build dependencies.
-
-## Ownership
+This fork is based on Keychron QMK `2025q3`, commit
+`2b493ff95f2665db719b1e95c91babb5036e72f3`.
 
 | Location | Responsibility |
 | --- | --- |
-| `platforms/sn34/sn34f28x` | Reset, clocks, timebase, freestanding runtime and chip Flash operations |
-| `platforms/sn34/include` | Shared platform interfaces and SDK configuration |
-| `tmk_core/protocol/sn34` | SDK USB transport, QMK host driver, report queues and lifecycle hooks |
-| `drivers/analog/adc_mux` | ADC/MUX frame production and buffer leasing |
-| `drivers/analog/keychron_he` | Sample-to-matrix mapping, travel conversion and Keychron integration |
-| `drivers/eeprom/sn34*` | Cached EEPROM and CRC-protected bank commits |
+| `platforms/sn34/sn34f28x` | Reset, clocks, timebase, watchdog, runtime, Flash and linker script |
+| `tmk_core/protocol/sn34` | SONiX USB transport, QMK host reports and lifecycle adapters |
+| `drivers/analog/adc_mux` | ADC/MUX sampling and complete-frame buffer ownership |
+| `drivers/analog/keychron_he` | Sample mapping, travel conversion, calibration and Keychron integration |
+| `drivers/eeprom/sn34*` | Cached EEPROM and CRC-protected two-bank commits |
 | `drivers/led/ws2812_sn34.c` | SPI/DMA WS2812 output |
-| `keyboards/<keyboard>/board` | Physical wiring, sample identities, LEDs, defaults, memory and persistent-format contracts |
-| `util/sn34` | Target generation, build import, host tools and packaging |
-| `tests/sn34` | Firmware emulation, model and build regressions |
+| `keyboards/<keyboard>` | QMK metadata, feature rules, board wiring, policy and keymaps |
+| `util/sn34` | Optional packaging, Raw HID configuration and configurator export |
+| `tests/sn34` | Offline ARM emulation and independent compatibility fixtures |
 
-QMK's existing `quantum/main.c` owns the lifecycle. Keychron's HE algorithms
-remain in `keyboards/keychron/common/analog_matrix`; the integration fixes are
-committed directly to those upstream files. Only the external SONiX HID class
-is patched into a build-local copy. The SDK itself is not included in the fork.
+QMK's `quantum/main.c` owns the lifecycle. Keychron HE algorithms remain in
+`keyboards/keychron/common/analog_matrix`; both stock keyboards and SN34 use
+its existing Make source list, with SN34-specific scan/calibration adapters.
+The ARM toolchain supplies newlib-nano. Its allocator grows through a bounded
+`_sbrk` between BSS and the reserved stack region; there is no private libc or
+statically reserved 32 KiB allocation arena.
 
-## Target contracts
+## Build ownership
 
-`board.json` separates sampled slots, electrical identities, physical keys,
-QMK coordinates and LED indices. Layer defaults and overrides use stable slot
-identities, not display names. `scan.phases` supplies ADC channels and scatter
-destinations; generated C preserves inline operations in the interrupt path.
-Keys can omit LEDs, and a chain can have additional decorative LEDs.
+`qmk compile` owns the entire firmware build. The SN34 platform adds the chip
+sources, external SDK paths, one Make rule for the build-local SDK fix, and C
+preprocessing of the linker script. It runs no custom Python code and never
+rewrites tracked sources. External paths are Make variables or `.sn34-local.mk`.
 
-`storage.json` owns the persistent-format contract. Battle68 retains its v36
-matrix coordinates, Fn `(0,0)`, bank addresses, HE layout and VIA compatibility
-date. These values are not global SN34 defaults. The compatibility fixture
-contains controlled test settings, not an executable OEM image.
+`keyboard.json` owns USB IDs/version, matrix dimensions, layout and LEDs.
+`board/board_config.h` owns the remaining board constants and persistence ABI;
+the linker script reads the same header. `board/wiring.h` contains inline
+peripheral operations and ADC rank/scatter tables. `board/keys.inc` supplies
+the one shared sample-to-matrix/calibration table; `hall_curve.inc` supplies
+the measured response curve. These are ordinary maintained source files.
 
-`sn34_test` is a synthetic target, not a hardware port. It deliberately uses a
-3x5 matrix, 16 sampled slots, two phases, 12 switches, five LEDs, two layers and
-different EEPROM banks. Its electrical identifiers do not follow Battle68's
-numbering convention.
+Common HID report definitions live in `tmk_core/protocol/usb_hid_reports.h` and
+are included by both the existing USB descriptor implementation and SONiX.
+No script extracts fragments from C source. Launcher wire IDs are mapped to
+the actual QMK C enum through `rgb_protocol.inc`; optional export reads the
+compiled mapping from the ELF.
 
-## Validation status
+## Runtime and persistence
 
-The migration is implemented in stages so each behavioral boundary can be
-checked against the preceding image.
+The platform starts clocks, watchdog and GPIO. QMK's EEPROM initialization
+loads the cache; HE matrix setup initializes fallback calibration and ADC.
+Board housekeeping runs profile hotkeys, indicators and idle storage saves.
+The board supplies the idle condition to the EEPROM driver. RGB indicators and
+Raw HID configuration translation stay outside the peripheral/USB drivers.
+The protocol handles USB queues, connection state and deferred reset requests.
 
-- [x] Import the original owned sources into one QMK history.
-- [x] Integrate the seven Keychron patches directly into their source files.
-- [x] Move production modules into platform, protocol, driver and board directories.
-- [x] Select board, curve, storage and output paths by keyboard/keymap target.
-- [x] Generate ADC ranks and scatter from each target's wiring.
-- [x] Preserve v36 mapping/default/storage contracts with regression fixtures.
-- [x] Extract calibration-provider policy from the EEPROM commit engine.
-- [x] Select Bootloader entry/packaging independently of the chip platform.
-- [x] Configure optional USB functions and RGB hardware backend per target.
-- [x] Extract reusable emulator classes and execute the synthetic target.
-- [x] Add portable host/packaging entry points and a dependency lock.
-- [x] Validate default, minimal and synthetic builds from a fresh checkout.
-- [ ] Validate the final image on physical Battle68 hardware.
+Battle68 preserves its v36 matrix coordinates, physical Fn at `(0,0)`, EEPROM
+banks and VIA compatibility date. The shared HE header uses the original stock
+layout. A v1-to-v2 bank migration moves calibration and subsequent VIA data back
+one byte before QMK initialization. This deliberately restores stock's overlap
+between the profile index and the first calibration byte. Independent fixtures
+check these boundaries. `sn34_test` exercises a different
+3x5 matrix, 16 sampled slots, two phases, 12 switches, five LEDs and different
+EEPROM banks. It is a synthetic test target, not a physical hardware port.
 
-Offline scan and Boot decision fixtures record results previously obtained by
-executing OEM code. They include source hashes and provenance, but no executable
-bytes. These tests exercise the new Flash/startup/scanner code and compare its
-behavior to that captured contract; they do not rerun the OEM Boot executable.
+## Optional host tools
 
-Physical timing, analog quality, USB-host behavior and reset/OTA still require
-hardware validation. A passing emulation run must not be reported as a physical
-keyboard test.
+Only `device.py`, `export.py` and `package.py` are command entry points.
+`firmware.py` reads a standard ELF for the latter tools and offline tests.
+The old generator, build wrapper, object import and source-manifest framework
+have been removed. Packaging is an explicit operation; it can preserve a
+compatible settings backup and wrap an external OEM updater.
 
-See [the validation record](validation.md) for the tested commit and scope.
+See [build instructions](build.md), [porting notes](porting.md) and
+[validation history](validation.md). Historical records describe the workflow
+at their recorded revision; current commands are documented in `build.md`.

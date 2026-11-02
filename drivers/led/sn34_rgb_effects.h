@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 #pragma once
-// Buildable effects in the pinned Keychron QMK core. The VIA menu is generated from
-// the preprocessed effect list, so its numeric IDs follow this exact build.
+// Buildable effects in the pinned Keychron QMK core. Launcher IDs are mapped
+// using the compiled QMK enum in protocol/sn34/rgb_protocol.h.
 #define RGB_MATRIX_FRAMEBUFFER_EFFECTS
 #define ENABLE_RGB_MATRIX_ALPHAS_MODS
 #define ENABLE_RGB_MATRIX_GRADIENT_UP_DOWN

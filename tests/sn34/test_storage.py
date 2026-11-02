@@ -12,7 +12,8 @@ import hashlib
 import json
 import struct
 from test_bat68 import Keyboard,BUILD,IMAGE,NAMES,SCRATCH,SYMS
-from build_config import ROOT
+from target import ROOT
+from storage import LAYOUT, read_banks
 
 
 def main():
@@ -20,14 +21,32 @@ def main():
     fixture=ROOT/"tests/sn34/boards/battle68/fixtures"
     compatibility=json.loads((fixture/"sn34_v36_compatibility.json").read_text(encoding="utf-8"))
     old=Keyboard((fixture/"sn34_v36_eeprom.bin").read_bytes())
+    backup=bytearray(LAYOUT.app_size)
+    backup[LAYOUT.code_limit:LAYOUT.eeprom_end]=(fixture/'sn34_v36_eeprom.bin').read_bytes()
+    previous=read_banks(backup)[0]['payload']
+    converted=bytearray(previous)
+    at=LAYOUT.eeprom_base+1
+    converted[at:-1]=previous[at+1:]
+    converted[-1]=0
+    converted[at]=previous[at]
+    assert bytes(old.u.mem_read(SYMS['cache'],LAYOUT.eeprom_size))==converted
     expected=compatibility["settings_fixture"]
     assert old.call("dynamic_keymap_get_keycode",0,r,c)==expected["A_keycode"]
     old.call("dynamic_keymap_macro_get_buffer",0,len(expected["macro_0"])+1,SCRATCH)
     assert bytes(old.u.mem_read(SCRATCH,len(expected["macro_0"])+1))==expected["macro_0"].encode()+b"\0"
     assert old.raw_command(bytes((0xa9,0x10)))[2]==expected["profile"]
     assert (old.call("rgb_matrix_get_hue"),old.call("rgb_matrix_get_sat"))==(expected["rgb_hue"],expected["rgb_saturation"])
-    assert old.call("sn34_eeprom_sequence")==expected["sequence"]
-    tests.append("Actual v36-produced EEPROM bytes restore keymaps, macros, HE profile and RGB without migration")
+    assert old.saved_sequence()==expected["sequence"]
+    old.call('sn34_eeprom_save_step')
+    interrupted=Keyboard(bytes(old.u.mem_read(0x79000,0x5000)))
+    assert bytes(interrupted.u.mem_read(SYMS['cache'],LAYOUT.eeprom_size))==converted
+    old.save()
+    migrated=Keyboard(bytes(old.u.mem_read(0x79000,0x5000)))
+    assert migrated.call('sn34_eeprom_version')==2
+    assert migrated.call('dynamic_keymap_get_keycode',0,r,c)==expected['A_keycode']
+    assert migrated.raw_command(bytes((0xa9,0x10)))[2]==expected['profile']
+    assert not migrated.call('sn34_eeprom_dirty')
+    tests.append("All v36 cache bytes migrate to stock HE offsets; an interrupted migration replays safely and a v2 commit/reboot preserves keymaps, macros, profile and RGB")
     m.remap("A",5)
     m.u.mem_write(SCRATCH,b"test\0");m.call("dynamic_keymap_macro_set_buffer",0,5,SCRATCH)
     assert m.raw_command(bytes((0xa9,0x14,1,2,10,3,5,1)))[2]==0
@@ -55,9 +74,9 @@ def main():
     assert global_raw&3==2 and (global_raw>>2)&63==10,reply.hex()
     hue,sat=loaded.call("rgb_matrix_get_hue"),loaded.call("rgb_matrix_get_sat")
     assert (hue,sat)==(77,88),(hue,sat,bytes(loaded.u.mem_read(SYMS["rgb_matrix_config"],8)).hex())
-    assert loaded.call("sn34_eeprom_sequence")==1
+    assert loaded.saved_sequence()==1
     tests.append("One committed EEPROM image restores dynamic keymaps, macros, selected HE profile, profile thresholds and RGB settings after fresh startup")
-    before=len(loaded.flash);assert loaded.call("sn34_eeprom_save")==0 and len(loaded.flash)==before
+    before=len(loaded.flash);assert loaded.save()==0 and len(loaded.flash)==before
     tests.append("No-op save performs no erase/program when the unified settings have not changed")
     partial=Keyboard(flash);partial.remap("A",6)
     partial.call("sn34_eeprom_save_step")
@@ -68,7 +87,7 @@ def main():
     restored=Keyboard(bytes(partial.u.mem_read(0x79000,0x5000)))
     assert restored.call("dynamic_keymap_get_keycode",0,r,c)==6
     assert restored.call("dynamic_keymap_get_keycode",0,sr,sc)==7
-    assert restored.call("sn34_eeprom_sequence")==2
+    assert restored.saved_sequence()==2
     tests.append("Interrupted background staging reloads the prior commit; a cache revision during staging restarts and commits both new keymaps consistently")
     erased=Keyboard(flash);erased.remap("A",6)
     erased.call("sn34_eeprom_save_step")
@@ -77,7 +96,7 @@ def main():
     erased.call("eeprom_read_block",SCRATCH,0,7680)
     assert bytes(erased.u.mem_read(SCRATCH,7680))==bytes(7680)
     assert int.from_bytes(erased.u.mem_read(SYMS["sn34_eeprom_revision"],4),"little")>revision
-    erased.call("sn34_eeprom_save")
+    erased.save()
     erase_loaded=Keyboard(bytes(erased.u.mem_read(0x79000,0x5000)))
     assert erase_loaded.call("dynamic_keymap_get_keycode",0,r,c)==4
     tests.append("QMK's EEPROM driver erase clears the unified cache and cancels an older staged commit; reboot initializes defaults")
@@ -86,7 +105,7 @@ def main():
         jitter.travel("A",12);jitter.step(100)
         assert not jitter.pressed(5)
         jitter.release("A");jitter.step(100)
-    assert jitter.call("sn34_eeprom_sequence")==2
+    assert jitter.saved_sequence()==2
     jitter_loaded=Keyboard(bytes(jitter.u.mem_read(0x79000,0x5000)))
     assert jitter_loaded.call("dynamic_keymap_get_keycode",0,sr,sc)==9
     tests.append("Unactuated Hall fluctuations do not starve idle persistence")
@@ -96,7 +115,7 @@ def main():
     assert not active.flash,"A complete quiet interval must follow release"
     active.step(5)
     for _ in range(20):active.step(10)
-    assert active.call("sn34_eeprom_sequence")==2
+    assert active.saved_sequence()==2
     tests.append("Background persistence waits for actual key release and a complete five-second quiet interval")
     automatic=Keyboard();r,c=NAMES["A"]["matrix"]
     for _ in range(2):

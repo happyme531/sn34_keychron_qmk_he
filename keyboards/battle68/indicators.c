@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 #include "quantum.h"
-#include "platform.h"
 #include "sn34f28x_hal.h"
-void sn34_indicators_init(void){
+void keyboard_pre_init_kb(void){
     SN_GPIO1->BCLR=(1u<<6)|(1u<<10)|(1u<<11);
     SN_GPIO1->DIR|=(1u<<6)|(1u<<10)|(1u<<11);
+    keyboard_pre_init_user();
 }
 void sn34_indicators_task(void){
     unsigned on=(host_keyboard_led_state().caps_lock?(1u<<6):0)|

@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 #pragma once
-#include "hardware_config.generated.h"
+#include "board_config.h"
 #include "hal_config_base.h"
 #define configUSE_PCD_PERIPHERAL 1
 #define configUSE_IWDG_PERIPHERAL 1
@@ -16,10 +16,8 @@
 #define configUSE_SPI_NONBLOCKING_IT 0
 #define configUSE_SPI_NONBLOCKING_DMA 1
 #include "hal_spi.h"
-#if SN34_ENABLE_SCAN
 #define configUSE_ADC_PERIPHERAL 1
 #define configUSE_ADC_NONBLOCKING_IT 1
 #define configUSE_ADC_NONBLOCKING_DMA 0
 #define configUSE_ADC_REGISTER_CALLBACKS 0
 #include "hal_adc.h"
-#endif

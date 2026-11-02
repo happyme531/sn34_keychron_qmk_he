@@ -1,0 +1,9 @@
+{
+  "test_only": true,
+  "tests": [
+    {
+      "script": "test_second_target.py",
+      "result": "second_target_test_results.json"
+    }
+  ]
+}

@@ -1,0 +1,365 @@
+{
+  "schema_version": 2,
+  "matrix": {
+    "abi_version": 1,
+    "abi_sha256": "1d5250b1e24bbf13b266711cbecfb431080dd6db14e7033a91c7a0cd19459f6b"
+  },
+  "roles": {
+    "fn": 11,
+    "win": 10,
+    "left_alt": 9,
+    "profile_trigger": 2,
+    "profile_1": 3,
+    "profile_2": 4,
+    "profile_3": 5
+  },
+  "provenance": {
+    "purpose": "Synthetic target for compile and emulation tests; no physical hardware support claim."
+  },
+  "keys": [
+    {
+      "layout_index": 0,
+      "hid_usage": "0x24",
+      "raw_slot": 0,
+      "matrix": [
+        0,
+        0
+      ],
+      "hall": {
+        "released": 2233,
+        "bottom": 1600
+      }
+    },
+    {
+      "layout_index": 1,
+      "hid_usage": "0x2b",
+      "raw_slot": 1,
+      "matrix": [
+        0,
+        1
+      ],
+      "hall": {
+        "released": 2247,
+        "bottom": 1600
+      }
+    },
+    {
+      "layout_index": 2,
+      "hid_usage": "0x39",
+      "raw_slot": 2,
+      "matrix": [
+        0,
+        2
+      ],
+      "hall": {
+        "released": 2342,
+        "bottom": 1600
+      }
+    },
+    {
+      "layout_index": 3,
+      "hid_usage": "0xe0",
+      "raw_slot": 3,
+      "matrix": [
+        0,
+        3
+      ],
+      "hall": {
+        "released": 2266,
+        "bottom": 1600
+      }
+    },
+    {
+      "layout_index": 4,
+      "hid_usage": "0x23",
+      "raw_slot": 4,
+      "matrix": [
+        0,
+        4
+      ],
+      "hall": {
+        "released": 2336,
+        "bottom": 1600
+      }
+    },
+    {
+      "layout_index": 5,
+      "hid_usage": "0x14",
+      "raw_slot": 5,
+      "matrix": [
+        1,
+        0
+      ],
+      "hall": {
+        "released": 2324,
+        "bottom": 1600
+      }
+    },
+    {
+      "layout_index": 6,
+      "hid_usage": "0x4",
+      "raw_slot": 6,
+      "matrix": [
+        1,
+        1
+      ],
+      "hall": {
+        "released": 2316,
+        "bottom": 1600
+      }
+    },
+    {
+      "layout_index": 7,
+      "hid_usage": "0xe1",
+      "raw_slot": 7,
+      "matrix": [
+        1,
+        2
+      ],
+      "hall": {
+        "released": 2305,
+        "bottom": 1600
+      }
+    },
+    {
+      "layout_index": 8,
+      "hid_usage": "0xe3",
+      "raw_slot": 8,
+      "matrix": [
+        1,
+        3
+      ],
+      "hall": {
+        "released": 2275,
+        "bottom": 1600
+      }
+    },
+    {
+      "layout_index": 9,
+      "hid_usage": "0x22",
+      "raw_slot": 9,
+      "matrix": [
+        1,
+        4
+      ],
+      "hall": {
+        "released": 2297,
+        "bottom": 1600
+      }
+    },
+    {
+      "layout_index": 10,
+      "hid_usage": "0x1a",
+      "raw_slot": 10,
+      "matrix": [
+        2,
+        0
+      ],
+      "hall": {
+        "released": 2318,
+        "bottom": 1600
+      }
+    },
+    {
+      "layout_index": 11,
+      "hid_usage": "0x16",
+      "raw_slot": 11,
+      "matrix": [
+        2,
+        1
+      ],
+      "hall": {
+        "released": 2286,
+        "bottom": 1600
+      }
+    }
+  ],
+  "scan": {
+    "sample_count": 16,
+    "phases": [
+      {
+        "samples": [
+          {
+            "slot": 0,
+            "channel": 1
+          },
+          {
+            "slot": 1,
+            "channel": 2
+          },
+          {
+            "slot": 2,
+            "channel": 3
+          },
+          {
+            "slot": 3,
+            "channel": 4
+          },
+          {
+            "slot": 4,
+            "channel": 5
+          },
+          {
+            "slot": 5,
+            "channel": 6
+          },
+          {
+            "slot": 6,
+            "channel": 7
+          },
+          {
+            "slot": 7,
+            "channel": 14
+          }
+        ],
+        "presample": [
+          1
+        ]
+      },
+      {
+        "samples": [
+          {
+            "slot": 8,
+            "channel": 1
+          },
+          {
+            "slot": 9,
+            "channel": 2
+          },
+          {
+            "slot": 10,
+            "channel": 3
+          },
+          {
+            "slot": 11,
+            "channel": 4
+          },
+          {
+            "slot": 12,
+            "channel": 5
+          },
+          {
+            "slot": 13,
+            "channel": 6
+          },
+          {
+            "slot": 14,
+            "channel": 7
+          },
+          {
+            "slot": 15,
+            "channel": 14
+          }
+        ],
+        "presample": [
+          1
+        ]
+      }
+    ],
+    "channel_order": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      14
+    ],
+    "initial_sequence": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      14
+    ],
+    "mux_pins": [
+      [
+        0,
+        0
+      ]
+    ],
+    "gate_pin": [
+      1,
+      12
+    ],
+    "analog_pins": {
+      "port": 2,
+      "mask": "0x7cfe",
+      "afio": [
+        "0x18c63180",
+        "0x18c0018c",
+        "0x318c"
+      ]
+    },
+    "adc_pre_clock": 5,
+    "power_en_time": 32,
+    "hold_time": 2,
+    "xtest": 8
+  },
+  "hardware": {
+    "clock_hz": 192000000,
+    "crystal_mhz": 12,
+    "pll_ns": 64,
+    "pll_fs_div": 4,
+    "gpio_output": [
+      2,
+      16,
+      512,
+      256
+    ],
+    "gpio_direction": [
+      16387,
+      57040,
+      2065153,
+      256
+    ],
+    "gpio_pull": [
+      2097147,
+      2097119,
+      2065153,
+      2096639
+    ],
+    "gpio_afio": [
+      [
+        0,
+        0,
+        0,
+        0
+      ],
+      [
+        0,
+        0,
+        "0x10040"
+      ]
+    ],
+    "rgb": {
+      "spi": 1,
+      "dma_channel": 0,
+      "mosi": [
+        1,
+        15
+      ],
+      "sck": [
+        1,
+        13
+      ],
+      "enable": [
+        1,
+        4
+      ],
+      "divider": 31
+    },
+    "queue": {
+      "count": 64,
+      "headroom": 32
+    }
+  },
+  "layer_labels": [
+    "Base",
+    "Fn"
+  ]
+}

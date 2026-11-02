@@ -19,8 +19,5 @@
 #include "hal_systick.h"
 #include "hal_scu.h"
 #include "hal_gpio.h"
-#pragma clang diagnostic push
-#pragma clang diagnostic ignored "-Wmacro-redefined"
 #include "hal_rcc.h"
-#pragma clang diagnostic pop
 #include "hal_flash.h"

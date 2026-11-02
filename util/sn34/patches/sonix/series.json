@@ -1,6 +1,0 @@
-[
-  {
-    "file": "001-hid-error-paths.patch",
-    "purpose": "Initialize HID descriptor error returns and validate the local OUT endpoint descriptor."
-  }
-]

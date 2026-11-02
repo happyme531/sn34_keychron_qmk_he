@@ -1,11 +1,10 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
-// Board policy around the unmodified SONiX SDK v2.1.4 Flash HAL.
+// Chip Flash operations using the unmodified SONiX SDK v2.1.4 Flash HAL.
 #include <stdint.h>
 #include "sn34f28x_hal_flash.h"
 #include "sn34_flash.h"
-#include "sn34_storage.generated.h"
+#include "board_config.h"
 _Static_assert(SN34_PAGE_SIZE==512u,"SN34F28x Flash backend requires the chip's 512-byte page size");
-#include "sn34_storage.generated.h"
 
 extern FLASH_ProcessTypeDef pFlash;
 extern HAL_Status_T FLASH_WaitForLastOperation(uint32_t timeout);

@@ -1,6 +1,5 @@
-MCU = SN34F280
-BOOTLOADER = custom
-CUSTOM_MATRIX = lite
+XINPUT_ENABLE = no
+SN34_OTA_ENABLE = no
 DEBOUNCE_TYPE = custom
 SRC += $(QUANTUM_DIR)/debounce/none.c
 EEPROM_DRIVER = custom
@@ -14,3 +13,6 @@ RAW_ENABLE = yes
 JOYSTICK_ENABLE = yes
 JOYSTICK_DRIVER = digital
 BOOTMAGIC_ENABLE = no
+
+include drivers/analog/sn34.mk
+include drivers/eeprom/sn34.mk

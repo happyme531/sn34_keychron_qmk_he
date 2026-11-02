@@ -26,8 +26,8 @@
     "rgb_saturation": 88,
     "sequence": 1
   },
-  "default_keymap_sha256": "d51c9842dddc3d2eab789a779ce10d235b4d5893f89ae4b4fcb80ee6e019e3ab",
-  "hall_defaults_sha256": "0634e3ebba5d657d58c5e180182aa05af864b8e1d337cb9b80ebee911a756d3f",
-  "rgb_layout_sha256": "eea74afcbe87722e7c70c891b24ca5e7c88eda9f9c593ff44275281da6f295a9",
-  "via_eeprom_date": "2026-10-30-00:00:00"
+  "via_eeprom_date": "2026-10-30-00:00:00",
+  "default_keymap_values_sha256": "25c26669d443e58569aac32f4f2a632d3cde6d23f6cc53fde24289bf1569d837",
+  "hall_defaults_values_sha256": "03bdb6678b36edc0357179c041f656f2f1cee5ed0d58b2ef56a3dec4962cfd36",
+  "rgb_layout_values_sha256": "6d75cef1ddcc40e860805df619ee5d92d9018b78cb33954348b0fa6352b2d755"
 }

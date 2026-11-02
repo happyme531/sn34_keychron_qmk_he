@@ -7,10 +7,11 @@ from pathlib import Path
 sys.path[:0]=[str(Path(__file__).resolve().parents[2]/"util/sn34"),str(Path(__file__).resolve().parent/"common")]
 import json,hashlib
 from keyboard import Keyboard,KEYS,NAMES,PROFILES,CURVE_STEPS,BUILD,SYMS,IMAGE,SCRATCH
+from emulator import Machine
 
 def main():
     tests=[];m=Keyboard()
-    # Exercise the freestanding word-copy paths with every relative alignment,
+    # Exercise the linked newlib memory primitives with every relative alignment,
     # short tails and guard bytes. These primitives also serve USB and EEPROM.
     pattern=bytes((i*37+19)&255 for i in range(768))
     for length in (0,1,2,3,4,5,7,8,15,31,64,95,192):
@@ -26,7 +27,26 @@ def main():
             expected=bytearray(pattern);expected[dest_align:dest_align+length]=bytes((0xa7,))*length
             m.call("memset",SCRATCH+dest_align,0xa7,length)
             assert bytes(m.u.mem_read(SCRATCH,768))==expected,(length,dest_align)
-    tests.append("Word memory copies/fills preserve every alignment, short tail and surrounding guard byte")
+    tests.append("newlib memory copies/fills preserve every alignment, short tail and surrounding guard byte")
+    assert 'arena' not in SYMS and '_malloc_r' in SYMS and '__heap_end' in SYMS
+    a=m.call('malloc',4096);b=m.call('malloc',512)
+    assert SYMS['__heap_start']<=a<a+4096<=SYMS['__heap_end']
+    assert a!=b and not a<=b<a+4096
+    m.u.mem_write(a,b'newlib heap')
+    m.call('free',b);m.call('free',a)
+    assert m.call('malloc',0x100000)==0
+    a=m.call('malloc',4096)
+    assert SYMS['__heap_start']<=a<a+4096<=SYMS['__heap_end']
+    m.call('free',a)
+    tests.append("newlib-nano allocation, free/reuse and exhaustion stay within linker heap bounds")
+    heap=Machine();start=heap.call('_sbrk',0)
+    assert start==SYMS['__heap_start']
+    assert heap.call('_sbrk',0x7fffffff)==0xffffffff
+    assert heap.call('_sbrk',0x80000000)==0xffffffff
+    assert heap.call('_sbrk',8)==start
+    assert heap.call('_sbrk',0xfffffff8)==start+8
+    assert heap.call('_sbrk',0)==start
+    tests.append("_sbrk rejects overflow/underflow and restores the break after a valid shrink")
     for key in KEYS:
         if key["name"]=="Fn":continue
         usage=int(key["hid_usage"],0)

@@ -12,14 +12,13 @@ import sys
 from urllib.request import urlopen
 import websocket
 sys.path.insert(0,str(Path(__file__).resolve().parents[1]))
-from build_config import ROOT
-from model import load_board
+from firmware import ROOT, keyboard_definition
 
 
 def compatibility_script():
-    usb=load_board()['usb']
+    board=keyboard_definition();usb=board['usb']
     identity=dict(vendorId=int(usb['vid'],0),productId=int(usb['pid'],0),
-                  productName=usb['product'],opened=False)
+                  productName=board['keyboard_name'],opened=False)
     return Path(__file__).with_name('launcher_compat.js').read_text(encoding='utf-8').replace('__SN34_IDENTITY__',json.dumps(identity))
 
 

@@ -14,8 +14,7 @@ from test_bat68 import Keyboard, BUILD, IMAGE, SYMS
 
 
 def main():
-    manifest=json.loads((BUILD/"manifest.json").read_text(encoding="utf-8"))
-    assert manifest["keymap"]=="minimal", "Build --keymap minimal and set SN34_NATIVE_BUILD to its output"
+    assert 'sn34_test_user_events' in SYMS, 'Compile the minimal keymap and select its ELF'
     m=Keyboard()
     counter=lambda name:int.from_bytes(m.u.mem_read(SYMS[name],4),"little")
     assert counter("sn34_test_matrix_inits")==1
@@ -29,7 +28,7 @@ def main():
     assert m.raw_command(bytes((0xa3,)))[1]==2
     m.press("D");m.release("D")
     assert m.raw_command(bytes((0xa9,0x10)))[2]==1
-    m.call("sn34_eeprom_save")
+    m.save()
     loaded=Keyboard(bytes(m.u.mem_read(0x79000,0x5000)))
     assert loaded.raw_command(bytes((0xa3,)))[1]==2
     loaded.press("Esc");assert not loaded.pressed(0xe3);loaded.release("Esc")

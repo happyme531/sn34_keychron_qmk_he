@@ -126,3 +126,5 @@ via*.json
 .sn34-local.json
 .deps/
 /tools/
+
+.sn34-local.mk

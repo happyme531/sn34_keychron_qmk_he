@@ -1,8 +1,7 @@
 # SPDX-License-Identifier: GPL-2.0-or-later
-MCU = SN34F280
-SRC += indicators.c diagnostics.c
-BOOTLOADER = custom
-CUSTOM_MATRIX = lite
+XINPUT_ENABLE = yes
+SN34_OTA_ENABLE = yes
+SRC += indicators.c
 # This pinned schema does not expose "none" as a named debounce option.
 # Select the existing upstream implementation explicitly; no board copy.
 DEBOUNCE_TYPE = custom
@@ -21,3 +20,6 @@ TAP_DANCE_ENABLE = yes
 COMBO_ENABLE = yes
 LTO_ENABLE = no
 BOOTMAGIC_ENABLE = no
+
+include drivers/analog/sn34.mk
+include drivers/eeprom/sn34.mk

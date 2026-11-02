@@ -13,23 +13,15 @@ native_vectors:
     .rept 3
     .word native_default_handler
     .endr
-#if SN34_COLD_INIT
     .word SCU_IRQHandler
-#else
-    .word native_default_handler
-#endif
     .rept 14
     .word native_default_handler
     .endr
-#if SN34_ENABLE_SCAN
     .word ADC0_IRQHandler
-#else
-    .word native_default_handler
-#endif
     .rept 37
     .word native_default_handler
     .endr
-#if SN34_RGB_ENABLE
+#ifdef RGB_MATRIX_ENABLE
     .word DMA1_CH0_IRQHandler
 #else
     .word native_default_handler
@@ -60,11 +52,5 @@ sn34_reset_entry:
 .type native_default_handler,%function
 .thumb_func
 native_default_handler:
-    tst lr,#4
-    ite eq
-    mrseq r0,msp
-    mrsne r0,psp
-    mov r1,lr
-    mrs r2,ipsr
     b native_fault
 .size native_default_handler,.-native_default_handler

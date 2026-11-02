@@ -1,24 +1,22 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 // FIFO preserves press/release sequences produced within one QMK iteration.
 #include "quantum.h"
-#include "platform.h"
+#include "sn34.h"
 #include "native.h"
 #include "raw_hid.h"
 #include "sn34f28x_hal.h"
 #include "game_controller_common.h"
 enum { QUEUE_COUNT=SN34_REPORT_QUEUE_COUNT,REPORT_MAX=64,LOOP_HEADROOM=SN34_REPORT_HEADROOM };
-typedef struct {uint8_t interface,length;uint8_t data[REPORT_MAX];} queued_t;
+typedef struct {uint8_t length;uint8_t data[REPORT_MAX];} queued_t;
 static queued_t queue[QUEUE_COUNT];
 enum { NO_REPORT=QUEUE_COUNT,INTERFACES=SN34_USB_INTERFACE_COUNT };
-static uint16_t next[QUEUE_COUNT],first[INTERFACES],last[INTERFACES],free_head,count;
+static uint16_t next[QUEUE_COUNT],first[INTERFACES],last[INTERFACES],free_head,queued_count;
 static bool connected;
 static bool recover;
-uint32_t sn34_report_overflows;
-uint32_t sn34_queue_peak,sn34_axis_coalesced;
 static void reset_queue(void){
     for(unsigned i=0;i<QUEUE_COUNT;i++)next[i]=i+1;
     for(unsigned i=0;i<INTERFACES;i++)first[i]=last[i]=NO_REPORT;
-    free_head=count=0;
+    free_head=queued_count=0;
 }
 void sn34_host_task(void){
     if(!sn34_usb_configured()){
@@ -31,7 +29,7 @@ void sn34_host_task(void){
         unsigned index=first[interface];queued_t *q=&queue[index];
         if(sn34_usb_send(interface,q->data,q->length))break;
         first[interface]=next[index];if(first[interface]==NO_REPORT)last[interface]=NO_REPORT;
-        next[index]=free_head;free_head=index;count--;
+        next[index]=free_head;free_head=index;queued_count--;
     }
     // A host that stops polling can exhaust even a bounded FIFO. Once it
     // recovers, neutralize every report rather than leave a lost release held.
@@ -47,25 +45,24 @@ static void send_report(unsigned interface,const void *data,unsigned length){
         unsigned offset=interface==SN34_USB_XINPUT?2:7,buttons=interface==SN34_USB_XINPUT?2:4;
         if(previous->length==length && (interface==SN34_USB_XINPUT || previous->data[0]==7) &&
            !memcmp(previous->data+offset,bytes+offset,buttons)){
-            memcpy(previous->data,bytes,length);sn34_axis_coalesced++;sn34_host_task();return;
+            memcpy(previous->data,bytes,length);sn34_host_task();return;
         }
     }
-    bool background=axis || interface==SN34_USB_RAW || interface==SN34_USB_DIAGNOSTIC;
+    bool background=axis || interface==SN34_USB_RAW;
     unsigned limit=background?QUEUE_COUNT-LOOP_HEADROOM:QUEUE_COUNT;
-    if(count>=limit){
-        if(background){sn34_report_overflows++;return;}
+    if(queued_count>=limit){
+        if(background){return;}
         uint32_t start=HAL_GetTick();
-        do{sn34_host_task();}while(count==QUEUE_COUNT && HAL_GetTick()-start<100);
-        if(count==QUEUE_COUNT){sn34_report_overflows++;recover=true;return;}
+        do{sn34_host_task();}while(queued_count==QUEUE_COUNT && HAL_GetTick()-start<100);
+        if(queued_count==QUEUE_COUNT){recover=true;return;}
     }
     unsigned index=free_head;free_head=next[index];next[index]=NO_REPORT;
-    queue[index].interface=interface;queue[index].length=length;memcpy(queue[index].data,data,length);
+    queue[index].length=length;memcpy(queue[index].data,data,length);
     if(last[interface]==NO_REPORT)first[interface]=index;else next[last[interface]]=index;
-    last[interface]=index;count++;if(count>sn34_queue_peak)sn34_queue_peak=count;
+    last[interface]=index;queued_count++;
     sn34_host_task();
 }
-bool sn34_host_ready(void){return sn34_usb_configured() && count<=QUEUE_COUNT-LOOP_HEADROOM;}
-unsigned sn34_host_queued(void){return count;}
+bool sn34_host_ready(void){return sn34_usb_configured() && queued_count<=QUEUE_COUNT-LOOP_HEADROOM;}
 static uint8_t leds(void){return native_keyboard_leds;}
 static void keyboard(report_keyboard_t *r){sn34_usb_set_last_boot(r);send_report(SN34_USB_BOOT,r,sizeof(*r));}
 static void nkro(report_nkro_t *r){send_report(SN34_USB_SHARED,r,sizeof(*r));}

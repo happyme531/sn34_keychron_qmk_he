@@ -1,92 +1,115 @@
 # Building SN34 targets
 
-The maintained entry point is:
+Use the ordinary QMK build entry point, in Linux or WSL:
 
-```powershell
-uv run util/sn34/cli.py build --keyboard battle68 --keymap default
+```sh
+qmk compile -kb battle68 -km default
+qmk compile -kb battle68 -km minimal
+qmk compile -kb sn34_test -km default
 ```
 
-The CLI uses `uv.lock` and separate `.build/python/windows` and
-`.build/python/linux` environments. Windows forwards compilation to WSL;
-Linux uses the same QMK Make backend.
-`uv`, QMK CLI and an ARM GNU toolchain must be available. The migration has been
-compiled with GCC 13.2.1. Source and build paths currently must not contain spaces.
+Install QMK CLI and an ARM GNU toolchain on PATH. GCC 13.2.1 is the tested
+compiler. The ARM toolchain must include newlib-nano headers, libraries,
+`nano.specs` and `nosys.specs` (on Debian/Ubuntu, install `libnewlib-arm-none-eabi`
+and `libnewlib-dev`). Supply SONiX SDK 2.1.4, DFP 2.0.4 and CMSIS Core
+externally. Set the following environment/Make variables, or put them in the
+ignored repository-root `.sn34-local.mk`:
 
-Supply SONiX SDK 2.1.4, DFP 2.0.4, CMSIS Core and newlib headers externally.
-Configure environment variables `SN34_SDK_DIR`, `SN34_DFP_DIR`, `SN34_CMSIS_DIR`,
-and `SN34_NEWLIB_INCLUDE`, or create an ignored `.sn34-local.json`:
-
-```json
-{
-  "sdk_dir": "../dependencies/sn34f28x_sdk_2.1.4/SDK/HAL",
-  "dfp_dir": "../dependencies/SONiX.SN34F2_DFP.2.0.4/Device/Include",
-  "cmsis_dir": "../dependencies/CMSIS_5",
-  "newlib_include": "../dependencies/newlib/include/newlib",
-  "toolchain_bin": "../dependencies/gcc/bin",
-  "qmk_bin": "../dependencies/qmk-venv/bin"
-}
+```make
+SN34_SDK_DIR := ../dependencies/sn34f28x_sdk_2.1.4/SDK/HAL
+SN34_DFP_DIR := ../dependencies/SONiX.SN34F2_DFP.2.0.4/Device/Include
+SN34_CMSIS_DIR := ../dependencies/CMSIS_5
 ```
 
-Paths are relative to the repository root. CLI options `--sdk-dir`, `--dfp-dir`,
-`--cmsis-dir`, `--newlib-include`, `--toolchain-bin`, and `--qmk-bin` override them.
-Windows converts configured dependency paths before entering WSL. Neither SDK
-sources, toolchains, a second QMK checkout nor original application images are
-stored in this repository.
+Paths are relative to the repository root and must not contain spaces, as with
+the surrounding QMK Make rules. Windows users run the same commands in WSL;
+host tools below can run natively on Windows. `.sn34-local.json` and the old
+SN34 build wrapper are no longer used.
 
-Required QMK submodule headers can be installed with:
+Initialize the QMK HID macro headers if needed:
 
 ```sh
 git submodule update --init --depth 1 lib/lufa
 ```
 
-Every target gets its own `.build/sn34/<keyboard>/<keymap>/` directory containing
-generated tables, source/patch hashes, `firmware.elf`, `firmware.bin`,
-`application.bin`, and configurator definitions. The application image includes
-the target-specific footer. The QMK raw BIN and application image have different
-purposes; OEM updater packaging is a separate operation.
+Firmware compilation has no SN34 Python stage. Board configuration, scan ranks,
+calibration and response tables are maintained directly under each keyboard's
+`board/` directory. The ordinary C preprocessor expands the linker script from
+the same board constants used by C. Make applies the single SONiX HID fix to a
+build-local copy; the external SDK is never modified.
 
-Additional build commands:
-
-```sh
-uv run util/sn34/cli.py build --keyboard battle68 --keymap minimal
-uv run util/sn34/cli.py build --keyboard sn34_test
-uv run util/sn34/cli.py test
-uv run util/sn34/cli.py test --keymap minimal
-uv run util/sn34/cli.py test --keyboard sn34_test
-uv run util/sn34/cli.py test --unit-only
-uv run util/sn34/cli.py device --keyboard battle68 status
-```
-
-`sn34_test` is a synthetic test target. It has no associated physical keyboard.
-The final migrated firmware has not yet been flashed as part of this refactor.
-
-Package an application after its required offline tests pass:
+Features use ordinary QMK rules and command-line overrides:
 
 ```sh
-uv run util/sn34/cli.py package --build-dir .build/sn34/battle68/default
-uv run util/sn34/cli.py package --build-dir .build/sn34/battle68/default --settings-backup /path/to/application-readback.bin --updater-template /path/to/oem_updater_v118.exe
+qmk compile -kb battle68 -km default -e RGB_MATRIX_ENABLE=no -e XINPUT_ENABLE=no -e SN34_OTA_ENABLE=no
 ```
 
-The updater template stays outside the repository and must match the selected
-target's recorded hash/resource contract. Settings preservation checks both
-bank CRCs and runs new-firmware startup before accepting the cache. Output goes
-to the build's `release/` directory. Synthetic targets cannot create releases.
+Default outputs include `.build/battle68_default.elf` and
+`.build/battle68_default.bin`. QMK also copies the BIN to the repository root.
+`-e BUILD_DIR=/path/to/output` selects another build directory. There is no
+second import directory, build manifest, source-hash gate or configurator
+export in the compile path.
+
+## Optional tools
+
+Each tool uses uv script dependencies and can be run independently. Export
+configuration files for the exact compiled RGB mapping with:
+
+```sh
+uv run util/sn34/export.py .build/battle68_default.elf
+uv run util/sn34/device.py --keyboard battle68 status
+uv run util/sn34/device.py --keyboard battle68 get --key A
+```
+
+Export writes `.build/battle68_default_config/sn34_via.json` and
+`sn34_launcher.json`; `--output-dir` overrides that destination. The device
+tool accepts unique key labels or `row,col` coordinates, and `--serial` selects
+one of multiple attached keyboards. It uses only the standard Raw HID
+interface. Settings save automatically after five seconds without key activity.
+
+The raw QMK BIN is the executable load image. Create the complete application
+image, including the retained vendor footer, separately:
+
+```sh
+uv run util/sn34/package.py .build/battle68_default.elf
+uv run util/sn34/package.py .build/battle68_default.elf --settings-backup /path/to/application-readback.bin --updater-template /path/to/oem_updater_v118.exe
+```
+
+Output defaults to `.build/battle68_default_release/`. Packaging checks ELF
+memory bounds and the selected keyboard's USB identity. The optional external
+updater must match `board/updater.json`. Settings preservation checks bank CRCs
+against the compiled ELF's memory bounds and copies committed banks intact.
+Startup compatibility is checked by the separate offline tests, not packaging.
+Firmware converts v1 settings to the restored stock HE layout in RAM and
+commits a v2 bank only through the ordinary background save engine.
+Synthetic targets have no production packaging contract.
+
+## Offline tests
+
+Tests consume the standard ELF directly, without copying or importing objects:
+
+```sh
+uv run tests/sn34/run.py
+uv run tests/sn34/run.py --keymap minimal
+uv run tests/sn34/run.py --keyboard sn34_test
+uv run tests/sn34/run.py --elf /path/to/battle68_default.elf
+```
+
+Logs and results go to `.build/sn34-tests/<target>/`. Measured reference data,
+legacy EEPROM contracts and emulator helpers live under `tests/sn34/`; none
+configure a build. Offline tests do not replace physical timing, typing,
+power-cycle or USB-host validation.
 
 ## Optional Launcher helper
 
-The existing official Launcher JSON-import compatibility shim is retained in
-`util/sn34/launcher`. It supplies the missing macro-buffer sizing fallback.
-It does not participate in firmware builds. To open a separate configuration
-browser profile on Windows, supply an externally installed, signed Chrome:
+The existing JSON-import compatibility helper remains under `util/sn34/launcher`
+and does not participate in builds. Supply an externally installed signed Chrome:
 
 ```powershell
 ./util/sn34/launcher/open_launcher.ps1 -BrowserPath 'C:/path/to/chrome.exe' -Visible
 ```
 
-On ARM64 Windows, use native ARM64 Chrome. Import the generated
-`.build/sn34/battle68/default/sn34_launcher.json` in Launcher. The helper accepts
-`-Keyboard`, `-Keymap` and `-Port`; use separate ports for different keyboards.
-Its Python dependency is locked independently in `apply_compat.py.lock`.
-Browser profiles, worker state and logs stay under `.build/launcher`.
-This refactor checked the helper offline; compatibility with the live Launcher
-service has not been revalidated.
+On ARM64 Windows use native ARM64 Chrome. Import the JSON from the optional
+export command. The helper accepts `-Keyboard`, `-Keymap` and `-Port`; browser
+profiles and logs stay under `.build/launcher`. Its live web compatibility has
+not been revalidated by this build cleanup.

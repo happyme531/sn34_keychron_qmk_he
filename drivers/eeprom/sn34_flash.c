@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
-#include "sn34_storage.generated.h"
+#include "board_config.h"
 #include "sn34_flash.h"
 #include <stdbool.h>
 

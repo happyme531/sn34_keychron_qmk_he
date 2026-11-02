@@ -8,13 +8,13 @@ sys.path.insert(0,str(Path(__file__).resolve().parents[2]/"util/sn34"))
 import copy
 import hashlib
 import json
+import re
 from pathlib import Path
 from tempfile import TemporaryDirectory
 import unittest
-from board import generate_board
-from build_config import ROOT
-from model import load_board, matrix_digest, keyboard_definition, sync_keyboard_definition
-from storage import LAYOUT, load_storage, read_banks, normalize_via_tag, STORAGE_FILE
+from target import ROOT
+from model import load_board, matrix_digest, keyboard_definition
+from storage import LEGACY_LAYOUT as LAYOUT, load_storage, read_banks, normalize_via_tag, STORAGE_FILE
 
 FIXTURES = ROOT / "tests/sn34/boards/battle68/fixtures"
 COMPAT = json.loads((FIXTURES / "sn34_v36_compatibility.json").read_text(encoding="utf-8"))
@@ -29,45 +29,33 @@ class CompatibilityContracts(unittest.TestCase):
     def test_matrix_identity_matches_the_frozen_contract(self):
         board = load_board()
         self.assertEqual(matrix_digest(board["keys"]), COMPAT["matrix_sha256"])
+        table=(ROOT/'keyboards/battle68/board/keys.inc').read_text(encoding='utf-8')
+        actual=[{'raw_slot':int(raw),'matrix':[int(slot)//board['matrix']['cols'],int(slot)%board['matrix']['cols']]}
+                for raw,slot,idle,bottom in re.findall(r'\{(\d+),(\d+),(\d+),(\d+)\}',table)]
+        self.assertEqual(matrix_digest(actual), COMPAT['matrix_sha256'])
         fn = next(k for k in board["keys"] if k["raw_slot"] == board["roles"]["fn"])
         self.assertEqual(fn["matrix"], [0, 0])
-        definition = keyboard_definition(board)
+        definition = keyboard_definition()
         self.assertEqual({tuple(k["matrix"]) for k in definition["layouts"]["LAYOUT"]["layout"]},
                          {tuple(k["matrix"]) for k in board["keys"]})
 
     def test_default_keymap_calibration_and_led_tables_are_unchanged(self):
-        generate_board(ROOT, self.root)
-        for key, filename in (("default_keymap_sha256", "keymap.generated.h"),
-                              ("hall_defaults_sha256", "hall.generated.h"), ("rgb_layout_sha256", "rgb.generated.h")):
-            self.assertEqual(hashlib.sha256((self.root / filename).read_text(encoding="utf-8").replace("SN34_HALL_KEYS", "BAT68_HALL_KEYS").replace("sn34_hall_key_t", "bat68_hall_key_t").replace("uint16_t slot,electrical;", "uint8_t slot,electrical;").encode()).hexdigest(), COMPAT[key], filename)
-
-    def test_renaming_fn_cannot_move_it_or_change_its_default_action(self):
-        generate_board(ROOT, self.root)
-        expected = (self.root / "keymap.generated.h").read_bytes()
-        board = copy.deepcopy(load_board())
-        next(k for k in board["keys"] if k["raw_slot"] == board["roles"]["fn"])["name"] = "renamed display label"
-        folder = self.root / "board"
-        folder.mkdir(parents=True)
-        (folder / "board.json").write_text(json.dumps(board), encoding="utf-8")
-        generate_board(self.root, self.root, folder / "board.json")
-        self.assertEqual((self.root / "keymap.generated.h").read_bytes(), expected)
-
-    def test_accidental_coordinate_changes_are_rejected(self):
-        board = copy.deepcopy(load_board())
-        board["keys"][0]["matrix"] = [0, 2]
-        path = self.root / "board.json"
-        path.write_text(json.dumps(board), encoding="utf-8")
-        with self.assertRaisesRegex(ValueError, "ABI digest"):
-            load_board(path)
-
-    def test_qmk_metadata_includes_literal_dimensions_and_detects_stale_copies(self):
-        sync_keyboard_definition(self.root)
-        config = self.root / "keyboards/battle68/config.h"
-        self.assertIn("#define MATRIX_ROWS 6\n#define MATRIX_COLS 16\n", config.read_text(encoding="utf-8"))
-        sync_keyboard_definition(self.root, check=True)
-        config.write_text("#define MATRIX_ROWS 5\n", encoding="utf-8")
-        with self.assertRaisesRegex(ValueError, "metadata is stale"):
-            sync_keyboard_definition(self.root, check=True)
+        digest = lambda value: hashlib.sha256(json.dumps(value, separators=(',', ':')).encode()).hexdigest()
+        keymap = (ROOT/'keyboards/battle68/keymaps/default/keymap.c').read_text(encoding='utf-8')
+        values = re.sub(r'\s+', '', keymap.split('=', 1)[1].split(';',1)[0])
+        self.assertEqual(digest(values), COMPAT['default_keymap_values_sha256'])
+        table = (ROOT / 'keyboards/battle68/board/keys.inc').read_text(encoding='utf-8')
+        hall = [[int(row.split(',')[i]) for i in (1, 2, 3)]
+                for row in re.findall(r'\{(\d+,\d+,\d+,\d+)\}', table)]
+        self.assertEqual(digest(hall), COMPAT['hall_defaults_values_sha256'])
+        board=load_board()
+        leds=keyboard_definition()['rgb_matrix']['layout']
+        matrix=[[255]*board['matrix']['cols'] for _ in range(board['matrix']['rows'])]
+        for index,led in enumerate(leds):
+            if 'matrix' in led:
+                row,col=led['matrix'];matrix[row][col]=index
+        values=[matrix,[[led['x'],led['y']] for led in leds],[led['flags'] for led in leds]]
+        self.assertEqual(digest(values), COMPAT['rgb_layout_values_sha256'])
 
     def test_storage_schema_matches_installed_firmware(self):
         self.assertEqual(list(map(hex, LAYOUT.eeprom_banks)), COMPAT["eeprom_banks"])
@@ -102,11 +90,11 @@ class CompatibilityContracts(unittest.TestCase):
         payload=bytearray(LAYOUT.eeprom_size)
         at=LAYOUT.via_magic_offset
         payload[at:at+3]=bytes.fromhex("261031")
-        self.assertEqual(normalize_via_tag(payload),bytes.fromhex("261031"))
+        self.assertEqual(normalize_via_tag(payload,LAYOUT),bytes.fromhex("261031"))
         self.assertEqual(payload[at:at+3],LAYOUT.via_magic)
         payload[at:at+3]=bytes.fromhex("ffffff")
         with self.assertRaisesRegex(ValueError,"marked for reset"):
-            normalize_via_tag(payload)
+            normalize_via_tag(payload,LAYOUT)
 
 
 if __name__ == "__main__":

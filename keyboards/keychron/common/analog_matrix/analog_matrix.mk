@@ -3,12 +3,16 @@ USE_FPU = yes
 OPT_DEFS += -DANANLOG_MATRIX
 
 ANALOG_MATRX_DIR = $(TOP_DIR)/keyboards/keychron/common/analog_matrix
+ANALOG_MATRIX_I2C_SRC ?= i2c_master.c
+ANALOG_MATRIX_EEPROM_SRC ?= $(ANALOG_MATRX_DIR)/eeprom_he.c
+ANALOG_MATRIX_SCAN_SRC ?= $(ANALOG_MATRX_DIR)/analog_matrix_scan.c
+ANALOG_MATRIX_USB_SRC ?= $(ANALOG_MATRX_DIR)/usb_descriptor_override.c
 SRC += \
-     i2c_master.c \
-     $(ANALOG_MATRX_DIR)/eeprom_he.c \
-     $(ANALOG_MATRX_DIR)/analog_matrix_scan.c \
+     $(ANALOG_MATRIX_I2C_SRC) \
+     $(ANALOG_MATRIX_EEPROM_SRC) \
+     $(ANALOG_MATRIX_SCAN_SRC) \
      $(ANALOG_MATRX_DIR)/profile.c \
-     $(ANALOG_MATRX_DIR)/usb_descriptor_override.c \
+     $(ANALOG_MATRIX_USB_SRC) \
      $(ANALOG_MATRX_DIR)/action_regular_trigger.c \
      $(ANALOG_MATRX_DIR)/action_rapid_trigger.c \
      $(ANALOG_MATRX_DIR)/action_okmc.c \

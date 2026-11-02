@@ -1,61 +1,46 @@
-# Adding a keyboard
+# Adding an SN34 keyboard
 
-Start with a new `keyboards/<name>/` directory. `sn34_test` demonstrates geometry
-and feature differences; it is a synthetic fixture, not a verified wiring guide.
-Use measured wiring and calibration provenance for a real keyboard.
+Create an ordinary QMK keyboard directory. `sn34_test` demonstrates different
+geometry and feature choices, but is not a verified hardware wiring guide.
 
-Each target owns:
+Maintain these sources directly:
 
-- `keyboard.json` and `config.h`: generated QMK metadata, checked into Git so
-  QMK can discover the target before platform preparation.
-- `rules.mk`: ordinary QMK features, MCU and custom-matrix selection.
-- `config_base.h`: entry into the shared HE configuration and board overrides.
-- `board/target.json`: Bootloader backend, protocol/RGB feature selection,
-  validation profiles and optional external updater-template contract.
-- `board/board.json`: keys, stable sample identities, QMK coordinates, layers,
-  ADC phases, GPIO/clock settings and independent LED mapping.
-- `board/storage.json`: memory partitions, EEPROM identity/version, HE offsets
-  and the VIA compatibility date.
-- `board/hall_curve.json`: numerical response curve and its provenance.
-- `keymaps/`: default and optional user keymaps.
+- `keyboard.json`: identity, USB IDs/version, matrix dimensions, physical layout,
+  dynamic keymap layers and RGB LED layout.
+- `config.h`: board layer roles, serial number, `board/board_config.h` and the
+  shared HE configuration.
+- `rules.mk` and `post_rules.mk`: QMK features and HE, EEPROM and LED drivers,
+  following the existing SN34 keyboards.
+- `board/board_config.h`: clock/ADC settings, scan sizes, hotkeys and persistent
+  memory constants. Linker memory bounds come from this same header.
+- `board/wiring.h`: GPIO initialization, MUX selection, ADC ranks/scatter and
+  optional RGB pin operations. Keep interrupt-path operations inline.
+- `board/keys.inc`: sample slot, QMK matrix slot and measured calibration
+  endpoints. This table is defined once in the HE frame translation unit.
+- `board/hall_curve.inc`: normalized magnetic response data with measurement
+  provenance. This is a maintained constant table, not a build-time export.
+- `board/configurator.json`: optional configurator layer labels.
+- `board/updater.json`: optional production updater-template hash/resource
+  contract. Do not copy another keyboard's updater identity.
+- `keymaps/`: ordinary QMK keymaps.
 
-Run `uv run util/sn34/cli.py build --keyboard <name> --prepare-only` after editing
-the model. Check the generated QMK metadata diff, then build and test the target.
-Use a separate EEPROM identity for a new board; do not copy Battle68's v36
-persistence identity or its Fn-coordinate exception into unrelated hardware.
+Run `qmk compile -kb <keyboard> -km default`. No prepare or import command is
+needed. Select RGB, XInput and application OTA through the existing Make flags.
+The current scanner uses ADC0; the WS2812 driver uses SPI1 and DMA1 channel 0.
+Another peripheral topology requires a suitable driver implementation.
 
-## Existing backends
+The QMK `custom` bootloader implements the retained footer-validity boot scheme;
+select `"bootloader": "custom"` in keyboard metadata.
+Changing image validation requires updating both the backend and packaging.
 
-The chip platform currently supports SN34F280. The ADC0/MUX backend accepts
-per-phase channel-to-slot mappings, channel rank order, pre-samples, phase pins,
-gate wiring and analog-front-end GPIO operations. Its three-buffer frame API
-is independent of the number of phases, sampled slots or logical matrix shape.
-Another scanner implementation should implement that same acquire/release API
-and be registered in `util/sn34/prepare.py`.
+Use normal QMK keyboard hooks for indicators, hotkeys and storage housekeeping.
+QMK invokes `housekeeping_task_user` separately. Board calibration providers may
+implement `sn34_board_calibration_read`; false selects the board's fallback
+endpoints.
 
-The current RGB backend uses SPI1 and DMA1 channel 0. Pins, the enable GPIO and
-SPI divisor come from the board model. A different peripheral/channel topology
-needs a corresponding backend. RGB, XInput, diagnostics and application OTA
-interfaces can be omitted independently. `target.json`'s RGB selection must
-agree with QMK's `RGB_MATRIX_ENABLE` in `rules.mk`; builds reject disagreement.
-
-The `vendor_footer` Bootloader backend implements the retained footer-validity
-scheme used by Battle68. Selecting the same MCU does not select this backend
-automatically: every target names its Bootloader policy explicitly. Add a new
-backend for different entry, partition or image-validation behavior.
-
-## Board services
-
-Indicator hooks have empty weak defaults and can be implemented by the board.
-Keyboard behavior remains in the normal QMK board/user hooks. Shared modules
-must not depend on a specific keymap.
-
-`sn34_board_calibration_read(buffer, size)` can provide a validated factory
-calibration record, for example from a board EEPROM. Returning false selects
-the generated per-key fallback endpoints. This Keychron interface is separate
-from the Flash bank engine and from runtime calibration stored in the cache.
-
-Changing sample IDs, logical coordinates or persisted formats needs an explicit
-migration and fixtures for that board. Shared tests cover model validation,
-build isolation, host-device selection and actual ARM execution. Add board
-regressions before claiming physical support.
+Add independent measured/reference data and a test plan under
+`tests/sn34/boards/<keyboard>/fixtures/`. These fixtures never feed the compiler.
+Run `uv run tests/sn34/run.py --keyboard <keyboard>` after compilation.
+Changes to sample mapping, persistent coordinates or stored formats need an
+explicit compatibility decision and regression evidence. Offline emulation
+does not establish physical support.

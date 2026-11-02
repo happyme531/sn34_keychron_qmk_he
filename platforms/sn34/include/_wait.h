@@ -3,3 +3,4 @@
 #pragma once
 void wait_ms(unsigned int ms);
 void wait_us(unsigned int us);
+#define waitInputPinDelay() wait_us(1)

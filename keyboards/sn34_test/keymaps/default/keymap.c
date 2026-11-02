@@ -1,2 +1,13 @@
 #include "quantum.h"
-#include "keymap.generated.h"
+const uint16_t PROGMEM keymaps[2][MATRIX_ROWS][MATRIX_COLS]={
+{
+{0x24,0x2b,0x39,0xe0,0x23},
+{0x14,0x4,0xe1,0xe3,0x22},
+{0x1a,MO(1),KC_NO,KC_NO,KC_NO},
+},
+{
+{KC_TRNS,KC_TRNS,KC_TRNS,KC_TRNS,KC_TRNS},
+{KC_TRNS,KC_TRNS,KC_TRNS,KC_TRNS,KC_TRNS},
+{KC_TRNS,KC_TRNS,KC_TRNS,KC_TRNS,KC_TRNS},
+},
+};

@@ -4,3 +4,4 @@
 # The override lives here because QMK's rules.mk metadata parser does not
 # understand GNU Make's override keyword.
 override BOOTMAGIC_ENABLE = no
+include drivers/led/sn34.mk

@@ -3,12 +3,11 @@
 #include "analog_matrix.h"
 #include "profile.h"
 #include "game_controller_common.h"
-#include "platform.h"
-#include "native.h"
-#include "board.generated.h"
+#include "sn34_he.h"
+#include "sn34_adc_mux.h"
+#include "sn34_board.h"
 #include "hall_curve.h"
-#include "hall_curve.generated.h"
-#include "perf.h"
+#include "hall_curve.inc"
 // Invert the stock magnetic response after normalizing each key's measured
 // released/bottom endpoints. This corrects shape without changing HE's 0..240
 // range, profile thresholds or gamepad normalization.
@@ -30,7 +29,6 @@ extern matrix_row_t okmc_matrix[MATRIX_ROWS],game_controller_matrix[MATRIX_ROWS]
 uint8_t profile_gobal_mode[PROFILE_COUNT]={AKM_REGULAR,AKM_RAPID,AKM_REGULAR};
 uint16_t default_profiles[PROFILE_COUNT][MATRIX_ROWS][MATRIX_COLS];
 static uint32_t last_frame;
-uint32_t sn34_he_frames,sn34_he_skipped_frames;
 void sn34_he_init(void){
     for(unsigned i=0;i<SN34_KEY_COUNT;i++)
         analog_matrix_mask[board_keys[i].matrix_slot/MATRIX_COLS]|=1u<<(board_keys[i].matrix_slot%MATRIX_COLS);
@@ -38,12 +36,8 @@ void sn34_he_init(void){
 }
 extern void sn34_analog_update_frame(const uint16_t samples[SN34_SAMPLE_COUNT]);
 bool sn34_he_scan(void){
-    uint32_t started=sn34_cpu_clock();
     const uint16_t *samples;
-    uint32_t previous=last_frame;
     if(!native_scan_acquire(&samples,&last_frame))return false;
-    if(sn34_he_frames && last_frame-previous>1)sn34_he_skipped_frames+=last_frame-previous-1;
-    sn34_he_frames++;
     matrix_row_t before[MATRIX_ROWS];memcpy(before,analog_raw_matrix,sizeof(before));
     memset(analog_raw_matrix,0,sizeof(analog_raw_matrix));
     sn34_analog_update_frame(samples);
@@ -55,12 +49,10 @@ bool sn34_he_scan(void){
         matrix_row_t next=raw_matrix[r]&analog_matrix_mask[r];
         changed|=next!=matrix[r];raw_matrix[r]=next;
         // Keychron's virtual matrix represents advanced-mode activity for
-        // diagnostics/indicators. DKS emits its own actions and must not also
+        // matrix queries and indicators. DKS emits its own actions and must not also
         // dispatch the physical key's normal keycode through QMK.
         virtual_matrix[r]=next|okmc_matrix[r]|game_controller_matrix[r];
     }
-    uint32_t elapsed=sn34_cpu_clock()-started;sn34_he_cycles+=elapsed;
-    if(elapsed>sn34_he_max_cycles)sn34_he_max_cycles=elapsed;
     return changed;
 }
 bool sn34_physical_released(void){
@@ -68,5 +60,10 @@ bool sn34_physical_released(void){
         unsigned slot=board_keys[i].matrix_slot;
         if(analog_matrix_get_travel(slot/MATRIX_COLS,slot%MATRIX_COLS)>TRAVEL_SCALE)return false;
     }
+    return true;
+}
+bool sn34_he_idle(void) {
+    if (!sn34_matrix_released()) return false;
+    for (unsigned row = 0; row < MATRIX_ROWS; row++) if (analog_raw_matrix[row]) return false;
     return true;
 }

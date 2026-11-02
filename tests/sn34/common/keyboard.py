@@ -14,11 +14,11 @@ import struct
 from emulator import Machine,ROOT,BUILD,SYMS,IMAGE,SCRATCH
 from model import load_board
 from storage import LAYOUT
-from build_config import board_directory
+from target import board_directory
 from unicorn import UC_PROT_READ,UC_PROT_EXEC
 from unicorn.arm_const import UC_ARM_REG_R0,UC_ARM_REG_R1,UC_ARM_REG_PC,UC_ARM_REG_LR
 
-KEYS=json.loads((BUILD/"board.json").read_text())
+KEYS=load_board()["keys"]
 PROFILES={k["raw_slot"]:{**k,"idle":k["hall"]["released"],"pressed":k["hall"]["bottom"]} for k in load_board()["keys"]}
 NAMES={k["name"]:k for k in KEYS}
 CURVE_STEPS=json.loads((board_directory()/"hall_curve.json").read_text(encoding="utf-8"))["adc_step_counts"]
@@ -29,6 +29,9 @@ class Keyboard(Machine):
         self.real_usb_endpoints=real_usb_endpoints
         self.tick=0;self.complete=True;self.flash=[];self.spi=[];self.spi_done=0;self.rx_lengths={};self.usb_link=[]
         super().__init__()
+        # These tests inject complete frames. The dedicated scanner suite runs
+        # native_scan_init and the real HAL against its ADC register model.
+        self.stub_addresses[SYMS['native_scan_init']&~1]='native_scan_init'
         if real_usb_endpoints:
             for name in ("HAL_PCD_EP_Open","HAL_PCD_EP_Close"):self.stub_addresses.pop(SYMS[name]&~1,None)
         self.u.mem_map(0xe000e000,0x2000)
@@ -126,5 +129,5 @@ class Keyboard(Machine):
 
     def raw_command(self,payload):
         data=payload+bytes(32-len(payload));self.u.mem_write(SCRATCH,data)
-        before=len(self.transfers);self.call("sn34_raw_hid_receive",SCRATCH,32);self.drain()
+        before=len(self.transfers);self.call("raw_hid_receive",0,SCRATCH,32);self.drain()
         return [p for ep,p in self.transfers[before:] if ep==0x85][-1]

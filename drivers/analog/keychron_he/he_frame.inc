@@ -1,7 +1,8 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 // This optional HE hook shares the core translation unit, preserving the
 // measured flatten/inlining behavior while keeping board mapping here.
-#include "board.generated.h"
+#include "sn34_board.h"
+#include "keys.inc"
 __attribute__((flatten))
 void sn34_analog_update_frame(const uint16_t samples[SN34_SAMPLE_COUNT]) {
     extern matrix_row_t analog_raw_matrix[MATRIX_ROWS];

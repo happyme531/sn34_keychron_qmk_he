@@ -4,5 +4,5 @@
 #include <stddef.h>
 void sn34_he_calibration_init(void);
 // A board can supply a validated factory-calibration record, e.g. over I2C.
-// false selects its generated fallback endpoints.
+// false selects its board-specific fallback endpoints.
 bool sn34_board_calibration_read(void *buffer,size_t size);

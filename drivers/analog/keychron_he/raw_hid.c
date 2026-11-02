@@ -1,12 +1,12 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 #include "quantum.h"
-#include "platform.h"
+#include "sn34_he.h"
 #include "analog_matrix.h"
 #include "profile.h"
 #include "via.h"
 #include "raw_hid.h"
 #include "keychron_raw_hid.h"
-#include "rgb_protocol.generated.h"
+#include "rgb_protocol.h"
 extern bool kc_raw_hid_rx(uint8_t src,uint8_t *data,uint8_t length);
 static void reject(uint8_t *data,uint8_t length){data[0]=255;raw_hid_send(data,length);}
 // Only the configurator protocol is translated. QMK keys, animations and the
@@ -22,15 +22,12 @@ void via_raw_hid_send(uint8_t src,uint8_t *data,uint8_t length){
 // Board adapters only translate RGB IDs and validate configuration writes.
 // Keychron owns Launcher identity/capabilities/dispatch and matrix queries;
 // QMK VIA owns ordinary keymaps, macros and RGB configuration commands.
-void sn34_raw_hid_receive(uint8_t *data,uint8_t length){
-    if(length!=32)return;
+bool via_command_kb(uint8_t src,uint8_t *data,uint8_t length){
+    if(length!=RAW_EPSIZE)return true;
     if(data[0]==id_custom_set_value && data[1]==3 && data[2]==2){
-        if(data[3]>=sizeof(sn34_rgb_wire_to_core) || sn34_rgb_wire_to_core[data[3]]==255){reject(data,length);return;}
+        if(data[3]>=sizeof(sn34_rgb_wire_to_core) || sn34_rgb_wire_to_core[data[3]]==255){reject(data,length);return true;}
         data[3]=sn34_rgb_wire_to_core[data[3]];
     }
-    raw_hid_receive(RAW_HID_SRC_USB,data,length);
-}
-bool via_command_kb(uint8_t src,uint8_t *data,uint8_t length){
     if(data[0]==KC_MISC_CMD_GROUP && data[1]==NKRO_SET &&
        (!sn34_physical_released() || !sn34_matrix_released())){
         data[2]=KC_FAIL;raw_hid_send(data,length);return true;
@@ -38,9 +35,6 @@ bool via_command_kb(uint8_t src,uint8_t *data,uint8_t length){
     return kc_raw_hid_rx(src,data,length);
 }
 void kc_analog_matrix_rx(uint8_t *data,uint8_t length){
-    sn34_he_raw_receive(data,length);
-}
-void sn34_he_raw_receive(uint8_t *data,uint8_t length){
 #ifndef XINPUT_ENABLE
     if(data[1]==0x23 && (data[2]&1u)){reject(data,length);return;}
 #endif
