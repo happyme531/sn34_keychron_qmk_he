@@ -6,7 +6,18 @@
 #include "raw_hid.h"
 #include "sn34f28x_hal.h"
 #include "game_controller_common.h"
-enum { QUEUE_COUNT=SN34_REPORT_QUEUE_COUNT,REPORT_MAX=64,LOOP_HEADROOM=SN34_REPORT_HEADROOM };
+enum { QUEUE_COUNT=SN34_REPORT_QUEUE_COUNT,REPORT_MAX=32,LOOP_HEADROOM=SN34_REPORT_HEADROOM };
+// Endpoint packet capacity can exceed the reports we actually enqueue.
+// Fail the build if an enabled report ever needs a larger queue slot.
+_Static_assert(sizeof(report_keyboard_t) <= REPORT_MAX, "Keyboard report exceeds queue slot");
+_Static_assert(sizeof(report_nkro_t) <= REPORT_MAX, "NKRO report exceeds queue slot");
+_Static_assert(sizeof(report_mouse_t) <= REPORT_MAX, "Mouse report exceeds queue slot");
+_Static_assert(sizeof(report_extra_t) <= REPORT_MAX, "Extra-key report exceeds queue slot");
+_Static_assert(sizeof(report_joystick_t) <= REPORT_MAX, "Joystick report exceeds queue slot");
+_Static_assert(RAW_EPSIZE <= REPORT_MAX, "Raw HID report exceeds queue slot");
+#ifdef XINPUT_ENABLE
+_Static_assert(sizeof(report_xinput_t) <= REPORT_MAX, "XInput report exceeds queue slot");
+#endif
 typedef struct {uint8_t length;uint8_t data[REPORT_MAX];} queued_t;
 static queued_t queue[QUEUE_COUNT];
 enum { NO_REPORT=QUEUE_COUNT,INTERFACES=SN34_USB_INTERFACE_COUNT };

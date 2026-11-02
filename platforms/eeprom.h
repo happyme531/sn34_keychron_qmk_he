@@ -77,6 +77,10 @@ void     eeprom_update_block(const void *__src, void *__dst, size_t __n);
 #        include "eeprom_legacy_emulated_flash_tests.h"
 #        define TOTAL_EEPROM_BYTE_COUNT (EEPROM_SIZE)
 #    endif
+#elif defined(EEPROM_VENDOR) && defined(EEPROM_SIZE)
+// A complete vendor backend can declare its own capacity. Specific backends
+// above retain priority, including wear leveling selected by a vendor platform.
+#    define TOTAL_EEPROM_BYTE_COUNT (EEPROM_SIZE)
 #else
 #    error Unknown EEPROM driver.
 #endif

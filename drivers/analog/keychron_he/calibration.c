@@ -30,13 +30,9 @@ static void migrate_v1_settings(void) {
     // Stock storage shares this byte with the first calibration record.
     eeprom_update_byte((uint8_t *)(EECONFIG_BASE_ANALOG_MATRIX + OFFSET_CURRENT_PROFILE), selected);
 }
-__attribute__((weak)) bool sn34_board_calibration_read(void *buffer,size_t size){
-    (void)buffer;(void)size;return false;
-}
 void sn34_he_calibration_init(void){
     migrate_v1_settings();
     memset(external,0,sizeof(external));
-    if(sn34_board_calibration_read(external,sizeof(external)))return;
     // The selected board supplies the fallback endpoints and their provenance.
     uint32_t vendor = VENDOR_ID; memcpy(external, &vendor, 4);
     external[4 + OFFSET_CALIBRATION] = 1; // Released references known; bottom still estimated.

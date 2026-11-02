@@ -30,8 +30,12 @@ preprocessing of the linker script. It runs no custom Python code and never
 rewrites tracked sources. External paths are Make variables or `.sn34-local.mk`.
 
 `keyboard.json` owns USB IDs/version, matrix dimensions, layout and LEDs.
-`board/board_config.h` owns the remaining board constants and persistence ABI;
-the linker script reads the same header. `board/wiring.h` contains inline
+`config.h` owns keyboard behavior, profile hotkeys, report queue capacity and
+RGB defaults. Each keyboard's `profiles.c` owns its default HE profiles; the
+read-only profile tables remain in Flash. `board/board_config.h` owns scan sizes
+and the persistence ABI, with overridable chip defaults from
+`platforms/sn34/include/sn34_defaults.h`. The linker script reads the same
+headers. `board/wiring.h` contains inline
 peripheral operations and ADC rank/scatter tables. `board/keys.inc` supplies
 the one shared sample-to-matrix/calibration table; `hall_curve.inc` supplies
 the measured response curve. These are ordinary maintained source files.
@@ -50,6 +54,16 @@ Board housekeeping runs profile hotkeys, indicators and idle storage saves.
 The board supplies the idle condition to the EEPROM driver. RGB indicators and
 Raw HID configuration translation stay outside the peripheral/USB drivers.
 The protocol handles USB queues, connection state and deferred reset requests.
+Queue slots hold the actual maximum 32-byte report, with compile-time checks
+for every supported report type; the endpoint's larger packet limit does not
+inflate every queue entry. The EEPROM driver supplies the complete vendor API,
+including initialization and capacity, without filtering QMK's source list.
+
+Shared HE command handling owns packet bounds, parameter validation and live
+profile updates. The SN34 Raw HID adapter owns only held-key policy and RGB
+wire-ID translation. Matrix hooks, frame consumption and travel conversion live
+in one translation unit; the ADC producer and the optimized HE frame hook stay
+separate. Calibration uses the board's maintained fallback endpoints.
 
 Battle68 preserves its v36 matrix coordinates, physical Fn at `(0,0)`, EEPROM
 banks and VIA compatibility date. The shared HE header uses the original stock

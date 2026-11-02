@@ -109,10 +109,13 @@ void send_analog_matrix(uint8_t *data, uint8_t length) {
 void get_firmware_version(uint8_t *data) {
     // One bounded implementation for USB transports, including freestanding
     // platforms without libc itoa(). DEVICE_VER is the common BCD version.
-    _Static_assert(sizeof(QMK_BUILDDATE) + 8 <= RAW_EPSIZE - 1, "Firmware version exceeds Raw HID payload");
+    // The Raw HID API always supplies 32 bytes; the first byte is the command.
+    // This shared USB/wireless handler must not depend on a USB backend header.
+    enum { VERSION_PAYLOAD_SIZE = 31 };
+    _Static_assert(sizeof(QMK_BUILDDATE) + 8 <= VERSION_PAYLOAD_SIZE, "Firmware version exceeds Raw HID payload");
     static const char hex[] = "0123456789abcdef";
     uint8_t i = 0;
-    memset(data, 0, RAW_EPSIZE - 1);
+    memset(data, 0, VERSION_PAYLOAD_SIZE);
     data[i++] = 'v';
     if (DEVICE_VER & 0xF000) data[i++] = hex[(DEVICE_VER >> 12) & 0xF];
     data[i++] = hex[(DEVICE_VER >> 8) & 0xF];

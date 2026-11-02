@@ -9,7 +9,6 @@ sys.path.insert(0,str(Path(__file__).resolve().parents[3]/"util/sn34"))
 import hashlib
 import json
 import os
-from pathlib import Path
 import struct
 from elftools.elf.elffile import ELFFile
 from unicorn import Uc,UcError,UC_ARCH_ARM,UC_MODE_THUMB,UC_MODE_MCLASS,UC_HOOK_CODE,UC_PROT_READ,UC_PROT_WRITE,UC_PROT_EXEC

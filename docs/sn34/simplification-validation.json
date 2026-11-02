@@ -1,0 +1,203 @@
+{
+  "date": "2026-11-03T01:36:37.201449+08:00",
+  "base_commit": "e89239b",
+  "status": "PASS_OFFLINE_NOT_FLASHED",
+  "targets": [
+    {
+      "target": "default",
+      "elf": ".build\\review-simplification\\default\\battle68_default.elf",
+      "before": {
+        "bin_bytes": 89328,
+        "data_bytes": 1192,
+        "bss_bytes": 70424,
+        "queue_bytes": 16640
+      },
+      "after": {
+        "bin_bytes": 89712,
+        "data_bytes": 1192,
+        "bss_bytes": 61656,
+        "queue_bytes": 8448
+      },
+      "image_sha256": "4de733c850f44c242428312a4b77a27c84b37f4a01e84233303e53389fa9cd63",
+      "identical_memory_contract": true,
+      "identical_tables_and_descriptors": [
+        "board_keys",
+        "sn34_hall_adc_curve",
+        "device_desc",
+        "KeyboardReport",
+        "SharedReport",
+        "RawReport",
+        "ota_report",
+        "profile_gobal_mode",
+        "default_profiles",
+        "sn34_rgb_wire_to_core",
+        "sn34_rgb_core_to_wire"
+      ],
+      "profile_layout_unchanged": true,
+      "default_profiles_read_only": true,
+      "unit_tests_passed": 18,
+      "unit_tests_skipped": 0,
+      "firmware_suites": [
+        "test_bat68.py",
+        "test_sn34_features.py",
+        "test_sn34_usb.py",
+        "test_storage.py",
+        "test_sn34_lifecycle.py",
+        "test_native_scan.py",
+        "test_native_boot.py",
+        "test_keychron_eeprom.py"
+      ]
+    },
+    {
+      "target": "minimal",
+      "elf": ".build\\review-simplification\\minimal\\battle68_minimal.elf",
+      "before": {
+        "bin_bytes": 86016,
+        "data_bytes": 1152,
+        "bss_bytes": 70288,
+        "queue_bytes": 16640
+      },
+      "after": {
+        "bin_bytes": 86464,
+        "data_bytes": 1152,
+        "bss_bytes": 61520,
+        "queue_bytes": 8448
+      },
+      "image_sha256": "6fe3e3b30abd92e2f01afa85b9e7dff780d3930b60737839e2cb55c807883409",
+      "identical_memory_contract": true,
+      "identical_tables_and_descriptors": [
+        "board_keys",
+        "sn34_hall_adc_curve",
+        "device_desc",
+        "KeyboardReport",
+        "SharedReport",
+        "RawReport",
+        "ota_report",
+        "profile_gobal_mode",
+        "default_profiles",
+        "sn34_rgb_wire_to_core",
+        "sn34_rgb_core_to_wire"
+      ],
+      "profile_layout_unchanged": true,
+      "default_profiles_read_only": true,
+      "unit_tests_passed": 18,
+      "unit_tests_skipped": 0,
+      "firmware_suites": [
+        "test_sn34_hooks.py"
+      ]
+    },
+    {
+      "target": "synthetic",
+      "elf": ".build\\review-simplification\\synthetic\\sn34_test_default.elf",
+      "before": {
+        "bin_bytes": 61024,
+        "data_bytes": 640,
+        "bss_bytes": 40544,
+        "queue_bytes": 4160
+      },
+      "after": {
+        "bin_bytes": 60984,
+        "data_bytes": 640,
+        "bss_bytes": 38400,
+        "queue_bytes": 2112
+      },
+      "image_sha256": "9f56e5e8dbad84da6870d0c6d9231f52be792111757b4e3482835bef10e44c24",
+      "identical_memory_contract": true,
+      "identical_tables_and_descriptors": [
+        "board_keys",
+        "sn34_hall_adc_curve",
+        "device_desc",
+        "KeyboardReport",
+        "SharedReport",
+        "RawReport",
+        "profile_gobal_mode",
+        "default_profiles"
+      ],
+      "profile_layout_unchanged": true,
+      "default_profiles_read_only": true,
+      "unit_tests_passed": 11,
+      "unit_tests_skipped": 1,
+      "firmware_suites": [
+        "test_second_target.py"
+      ]
+    },
+    {
+      "target": "features-off",
+      "elf": ".build\\review-simplification\\features-off\\battle68_default.elf",
+      "before": {
+        "bin_bytes": 66808,
+        "data_bytes": 688,
+        "bss_bytes": 68336,
+        "queue_bytes": 16640
+      },
+      "after": {
+        "bin_bytes": 67256,
+        "data_bytes": 688,
+        "bss_bytes": 59568,
+        "queue_bytes": 8448
+      },
+      "image_sha256": "226e16cc969f46dd831447fc0e54d7b8fd7717f15bc1166853be26b5a5d71527",
+      "identical_memory_contract": true,
+      "identical_tables_and_descriptors": [
+        "board_keys",
+        "sn34_hall_adc_curve",
+        "device_desc",
+        "KeyboardReport",
+        "SharedReport",
+        "RawReport",
+        "profile_gobal_mode",
+        "default_profiles"
+      ],
+      "profile_layout_unchanged": true,
+      "default_profiles_read_only": true,
+      "unit_tests_passed": 18,
+      "unit_tests_skipped": 0,
+      "firmware_suites": []
+    }
+  ],
+  "stock_he_builds": [
+    {
+      "target": "stock-q1",
+      "elf": ".build\\review-simplification\\stock-q1\\keychron_q1_he_ansi_encoder_keychron.elf",
+      "compiled": true
+    },
+    {
+      "target": "stock-k2",
+      "elf": ".build\\review-simplification\\stock-k2\\keychron_k2_he_ansi_keychron.elf",
+      "compiled": true
+    }
+  ],
+  "features_off_smoke": {
+    "status": "PASS_OFFLINE_NOT_FLASHED",
+    "image_sha256": "226e16cc969f46dd831447fc0e54d7b8fd7717f15bc1166853be26b5a5d71527",
+    "features": {
+      "rgb": false,
+      "xinput": false,
+      "ota": false
+    },
+    "tests": [
+      "three USB interfaces",
+      "Raw HID and disabled XInput rejection",
+      "typing and release",
+      "export omits lighting"
+    ]
+  },
+  "release": {
+    "keyboard": "battle68",
+    "source_image_sha256": "4de733c850f44c242428312a4b77a27c84b37f4a01e84233303e53389fa9cd63",
+    "application_sha256": "38d441f7d41d4635dd798f8eb4093867f7a6842bc530c7f2a367673065ae4533",
+    "hardware_verified": false,
+    "settings": {
+      "backup_sha256": "c5c87e53070cff54a1039d09746b16656d8ef82f1d17bdef832e42b30de9c746",
+      "sequence": 1,
+      "banks": 1
+    },
+    "bootloader": "custom",
+    "updater_sha256": "078ce4936fb23dde439e843cfc5b1fcabeee973706b1be40bd3c46126256c3b5",
+    "checksum": "0xC949"
+  },
+  "build_note": "Ordinary qmk compile; final builds use supported SKIP_GIT=yes to skip slow Git version probes.",
+  "limitations": [
+    "No keyboard was flashed; physical timing, typing feel and power-cycle behavior were not retested."
+  ]
+}

@@ -64,12 +64,14 @@ bool game_controller_mode_set(uint8_t mode) {
 }
 
 bool game_controller_set_curve(point_t *pt) {
-    if (pt[0].x > pt[1].x || pt[1].x > pt[2].x || pt[2].x > pt[3].x) return false;
+    for (unsigned i = 0; i < CURVE_POINTS_COUNT; i++) {
+        if (pt[i].x > FULL_TRAVEL_UNIT || pt[i].y > 127) return false;
+        if (i && pt[i - 1].x >= pt[i].x) return false;
+    }
 
     memcpy(curve, pt, sizeof(curve));
-    if (curve[0].x != curve[1].x) slope[0] = (float)(curve[1].y - curve[0].y) / (curve[1].x - curve[0].x);
-    if (curve[1].x != curve[2].x) slope[1] = (float)(curve[2].y - curve[1].y) / (curve[2].x - curve[1].x);
-    if (curve[2].x != curve[3].x) slope[2] = (float)(curve[3].y - curve[2].y) / (curve[3].x - curve[2].x);
+    for (unsigned i = 0; i < CURVE_POINTS_COUNT - 1; i++)
+        slope[i] = (float)(curve[i + 1].y - curve[i].y) / (curve[i + 1].x - curve[i].x);
 
     analog_matrix_eeprom_update(curve, (uint8_t *)OFFSET_CURVE_PTS_START, CURVE_POINTS_COUNT * SIZE_OF_POINT_T);
 

@@ -1,8 +1,9 @@
 XINPUT_ENABLE = no
+SRC += profiles.c
 SN34_OTA_ENABLE = no
 DEBOUNCE_TYPE = custom
 SRC += $(QUANTUM_DIR)/debounce/none.c
-EEPROM_DRIVER = custom
+EEPROM_DRIVER = vendor
 RGB_MATRIX_ENABLE = no
 RGB_MATRIX_DRIVER = custom
 NKRO_ENABLE = yes

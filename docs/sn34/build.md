@@ -37,6 +37,10 @@ calibration and response tables are maintained directly under each keyboard's
 `board/` directory. The ordinary C preprocessor expands the linker script from
 the same board constants used by C. Make applies the single SONiX HID fix to a
 build-local copy; the external SDK is never modified.
+Shared SN34F280 defaults are ordinary C headers, also listed as linker-script
+dependencies. The complete cached EEPROM backend uses `EEPROM_DRIVER = vendor`;
+its driver rules enable QMK initialization, and its configured `EEPROM_SIZE`
+supplies the capacity. No generic EEPROM source is added and then excluded.
 
 Features use ordinary QMK rules and command-line overrides:
 
@@ -99,6 +103,9 @@ Logs and results go to `.build/sn34-tests/<target>/`. Measured reference data,
 legacy EEPROM contracts and emulator helpers live under `tests/sn34/`; none
 configure a build. Offline tests do not replace physical timing, typing,
 power-cycle or USB-host validation.
+The shared HE protocol tests call the common handler directly, checking profile
+response bounds, rejected writes and immediate active-profile threshold changes
+without relying on SN34's transport policy wrapper.
 
 ## Optional Launcher helper
 

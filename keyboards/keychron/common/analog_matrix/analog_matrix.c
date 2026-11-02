@@ -80,30 +80,6 @@ enum {
     AUTO_CALIB_FINISHED,
 };
 
-enum {
-    AMC_GET_VERSION = 0x01,
-
-    AMC_GET_PROFILES_INFO = 0x10,
-    AMC_SELECT_PROFILE,
-    AMC_GET_PROFILE_RAW,
-    AMC_SET_PROFILE_NAME,
-    AMC_SET_TRAVAL,
-    AMC_SET_ADVANCE_MODE,
-    AMC_SET_SOCD,
-    AMC_RESET_PROFILE = 0x1E,
-    AMC_SAVE_PROFILE  = 0x1F,
-    AMC_GET_CURVE     = 0x20,
-    AMC_SET_CURVE,
-    AMC_GET_GAME_CONTROLLER_MODE,
-    AMC_SET_GAME_CONTROLLER_MODE,
-
-    AMC_GET_REALTIME_TRAVEL = 0x30,
-
-    AMC_CALIBRATE = 0x40,
-    AMC_GET_CALIBRATE_STATE,
-    AMC_GET_CALIBRATED_VALUE,
-};
-
 extern const matrix_row_t analog_matrix_mask[];
 extern const matrix_row_t okmc_matrix[MATRIX_ROWS];
 extern matrix_row_t       virtual_matrix[MATRIX_ROWS];
@@ -874,7 +850,7 @@ static bool get_calibrated_value(uint8_t row, uint8_t col, uint8_t *data) {
 }
 
 void analog_matrix_rx(uint8_t *data, uint8_t length) {
-    if (data[0] != 0xA9) return;
+    if (length != RAW_EPSIZE || data[0] != 0xA9) return;
 
     uint8_t cmd     = data[1];
     bool    success = true;
@@ -897,7 +873,11 @@ void analog_matrix_rx(uint8_t *data, uint8_t length) {
             uint8_t  index  = data[2];
             uint16_t offset = (data[4] << 8) | data[3];
             uint8_t  size   = data[5];
-            success         = profile_get_raw_data(index, offset, size, &data[6]);
+            if (index >= PROFILE_COUNT || size > 30 || offset + size > PROFILE_SIZE) goto reject;
+            // Launcher requests 30 bytes but consumes only the 26 bytes after
+            // the response header. Echo its request while bounding the copy.
+            if (size > length - 6) size = length - 6;
+            success = profile_get_raw_data(index, offset, size, &data[6]);
         } break;
 
         case AMC_SET_PROFILE_NAME:
@@ -917,6 +897,8 @@ void analog_matrix_rx(uint8_t *data, uint8_t length) {
             uint8_t  sens                  = data[5];
             uint8_t  rls_sens              = data[6];
             bool     entire                = data[7];
+            if (profile >= PROFILE_COUNT || mode > AKM_RAPID || act_pt > 39 || sens > 39 || rls_sens > 39 ||
+                (entire && (!mode || !act_pt || !sens))) goto reject;
             uint32_t row_mask[MATRIX_ROWS] = {0};
             if (!entire) {
                 for (uint8_t i = 0, j = 8; i < MATRIX_ROWS; i++, j += 3) {
@@ -929,6 +911,11 @@ void analog_matrix_rx(uint8_t *data, uint8_t length) {
         } break;
 
         case AMC_SET_ADVANCE_MODE:
+            if (data[3] == 1) {
+                uint8_t shallow_act = data[7], shallow_deact = data[8], deep_act = data[9], deep_deact = data[10];
+                if (!shallow_act || shallow_act > 39 || shallow_deact >= shallow_act || deep_act <= shallow_act ||
+                    deep_act > 40 || deep_deact < shallow_deact || deep_deact >= deep_act) goto reject;
+            }
             success = profile_set_adv_mode(&data[2]);
             data[2] = success ? 0 : 1;
             break;
@@ -960,6 +947,7 @@ void analog_matrix_rx(uint8_t *data, uint8_t length) {
 
         case AMC_SET_CURVE:
             success = game_controller_set_curve((point_t *)&data[2]);
+            if (!success) goto reject;
             data[2] = success ? 0 : 1;
             break;
 
@@ -969,6 +957,10 @@ void analog_matrix_rx(uint8_t *data, uint8_t length) {
             break;
 
         case AMC_SET_GAME_CONTROLLER_MODE:
+            if (data[2] & ~(GC_MASK_XINPUT | GC_MASK_TYPING)) goto reject;
+#ifndef XINPUT_ENABLE
+            if (data[2] & GC_MASK_XINPUT) goto reject;
+#endif
             success = game_controller_mode_set(data[2]);
             break;
 
@@ -987,6 +979,11 @@ void analog_matrix_rx(uint8_t *data, uint8_t length) {
             break;
     }
 
+    raw_hid_send(data, length);
+    return;
+
+reject:
+    data[0] = 0xFF;
     raw_hid_send(data, length);
 }
 

@@ -2,7 +2,6 @@
 #include "quantum.h"
 #include "sn34_he.h"
 #include "analog_matrix.h"
-#include "profile.h"
 #include "via.h"
 #include "raw_hid.h"
 #include "keychron_raw_hid.h"
@@ -35,36 +34,12 @@ bool via_command_kb(uint8_t src,uint8_t *data,uint8_t length){
     return kc_raw_hid_rx(src,data,length);
 }
 void kc_analog_matrix_rx(uint8_t *data,uint8_t length){
-#ifndef XINPUT_ENABLE
-    if(data[1]==0x23 && (data[2]&1u)){reject(data,length);return;}
-#endif
-    if(data[1]==0x12){
-        unsigned offset=data[3]|(data[4]<<8),requested=data[5];
-        if(data[2]>=PROFILE_COUNT || requested>30 || offset+requested>PROFILE_SIZE){reject(data,length);return;}
-        // Official Launcher requests 30 bytes for a profile name, but consumes
-        // only the 26 bytes available after its six-byte response header.
-        // Echo its requested length for compatibility while bounding both the
-        // upstream memset and memcpy to the physical packet capacity.
-        unsigned copied=requested>length-6?length-6:requested;
-        if(!profile_get_raw_data(data[2],offset,copied,data+6)){reject(data,length);return;}
-        raw_hid_send(data,length);return;
-    }
-    if(data[1]==0x14 && (data[2]>=PROFILE_COUNT || data[3]>AKM_RAPID || data[4]>39 || data[5]>39 || data[6]>39 ||
-       (data[7] && (!data[3] || !data[4] || !data[5])))){reject(data,length);return;}
-    if(data[1]==0x15 && data[3]==1){
-        unsigned a=data[7],d=data[8],b=data[9],e=data[10];
-        if(!a || a>39 || d>=a || b<=a || b>40 || e<d || e>=b){reject(data,length);return;}
-    }
-    if(data[1]==0x21){
-        for(unsigned i=0;i<4;i++)if(data[2+i*2]>40 || data[3+i*2]>127){reject(data,length);return;}
-        for(unsigned i=0;i<3;i++)if(data[2+i*2]>=data[4+i*2]){reject(data,length);return;}
-    }
-    if(data[1]==0x23 && (data[2]&~3u)){reject(data,length);return;}
-    if(data[1]==0x40 && data[2]==2 && !sn34_physical_released()){reject(data,length);return;}
-    bool modifying=data[1]==0x11 || (data[1]>=0x13 && data[1]<=0x16) || data[1]==0x1e || data[1]==0x1f || data[1]==0x21 || data[1]==0x23;
+    if(length!=RAW_EPSIZE)return;
+    uint8_t cmd=data[1];
+    if(cmd==AMC_CALIBRATE && data[2]==2 && !sn34_physical_released()){reject(data,length);return;}
+    bool modifying=cmd==AMC_SELECT_PROFILE || (cmd>=AMC_SET_PROFILE_NAME && cmd<=AMC_SET_SOCD) ||
+        cmd==AMC_RESET_PROFILE || cmd==AMC_SAVE_PROFILE || cmd==AMC_SET_CURVE || cmd==AMC_SET_GAME_CONTROLLER_MODE;
     if(modifying &&
        (!sn34_physical_released() || !sn34_matrix_released())){data[0]=255;raw_hid_send(data,length);return;}
-    unsigned cmd=data[1];bool global=cmd==0x14 && data[7];
     analog_matrix_rx(data,length);
-    if(global)update_travel_configs();
 }

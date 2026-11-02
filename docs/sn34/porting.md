@@ -7,12 +7,15 @@ Maintain these sources directly:
 
 - `keyboard.json`: identity, USB IDs/version, matrix dimensions, physical layout,
   dynamic keymap layers and RGB LED layout.
-- `config.h`: board layer roles, serial number, `board/board_config.h` and the
-  shared HE configuration.
+- `config.h`: layer roles, hotkeys, serial number, queue capacity, default HE/RGB
+  behavior, `board/board_config.h` and the shared HE interface configuration.
+- `profiles.c`: default profile modes and a read-only per-key profile table,
+  following the stock Keychron keyboards.
 - `rules.mk` and `post_rules.mk`: QMK features and HE, EEPROM and LED drivers,
   following the existing SN34 keyboards.
-- `board/board_config.h`: clock/ADC settings, scan sizes, hotkeys and persistent
-  memory constants. Linker memory bounds come from this same header.
+- `board/board_config.h`: scan sizes and persistent memory constants. Define any
+  clock/ADC or memory overrides before including `sn34_defaults.h`. Linker memory
+  bounds come from these same headers.
 - `board/wiring.h`: GPIO initialization, MUX selection, ADC ranks/scatter and
   optional RGB pin operations. Keep interrupt-path operations inline.
 - `board/keys.inc`: sample slot, QMK matrix slot and measured calibration
@@ -34,9 +37,8 @@ select `"bootloader": "custom"` in keyboard metadata.
 Changing image validation requires updating both the backend and packaging.
 
 Use normal QMK keyboard hooks for indicators, hotkeys and storage housekeeping.
-QMK invokes `housekeeping_task_user` separately. Board calibration providers may
-implement `sn34_board_calibration_read`; false selects the board's fallback
-endpoints.
+QMK invokes `housekeeping_task_user` separately. The current calibration adapter
+uses the fallback endpoints maintained in `board/keys.inc`.
 
 Add independent measured/reference data and a test plan under
 `tests/sn34/boards/<keyboard>/fixtures/`. These fixtures never feed the compiler.

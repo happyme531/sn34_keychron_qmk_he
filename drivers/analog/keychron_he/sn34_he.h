@@ -4,6 +4,4 @@
 #include <stdint.h>
 bool sn34_matrix_released(void);
 bool sn34_physical_released(void);
-bool sn34_he_scan(void);
-void sn34_he_init(void);
 bool sn34_he_idle(void);

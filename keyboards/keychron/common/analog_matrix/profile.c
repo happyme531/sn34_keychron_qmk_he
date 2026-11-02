@@ -97,7 +97,7 @@ enum {
 };
 
 extern uint8_t  profile_gobal_mode[PROFILE_COUNT];
-extern uint16_t default_profiles[PROFILE_COUNT][MATRIX_ROWS][MATRIX_COLS];
+extern const uint16_t default_profiles[PROFILE_COUNT][MATRIX_ROWS][MATRIX_COLS];
 
 static analog_matrix_profile_t  profile[PROFILE_COUNT];
 static uint8_t                  current_profile_index;
@@ -179,11 +179,7 @@ bool profile_select(uint8_t prof_idx, bool indication) {
 }
 
 bool profile_get_raw_data(uint8_t prof_idx, uint16_t offset, uint8_t size, uint8_t *data) {
-    if (prof_idx >= PROFILE_COUNT || offset + size > sizeof(profile)) return false;
-
-    memset(data, 0, size);
-
-    if (offset + size > PROFILE_SIZE) size = PROFILE_SIZE - offset;
+    if (prof_idx >= PROFILE_COUNT || offset > PROFILE_SIZE || size > PROFILE_SIZE - offset) return false;
     memcpy(data, (uint8_t *)(&profile[prof_idx]) + offset, size);
 
     return true;
@@ -200,7 +196,7 @@ bool profile_set_traval(uint8_t prof_idx, uint8_t mode, uint8_t act_pt, uint8_t 
         prof->global.act_pt             = act_pt;
         prof->global.rpd_trig_sen       = sens;
         prof->global.rpd_trig_sen_deact = rls_sens;
-        memset(row, 0xFF, sizeof(row[0]) * MATRIX_ROWS);
+        if (prof_idx == profile_get_current_index()) update_travel_configs();
     } else {
         for (uint8_t r = 0; r < MATRIX_ROWS; r++)
             for (uint8_t c = 0; c < MATRIX_COLS; c++) {

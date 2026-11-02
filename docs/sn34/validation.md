@@ -138,3 +138,43 @@ The task-start source snapshot and review patch are under
 `.build/architecture-cleanup-before/` and `.build/architecture-cleanup/changes.patch`.
 No keyboard was flashed. Full stock ChibiOS builds remain untested because the
 submodule sources are not populated in this checkout.
+
+## Review simplification (2026-11-03)
+
+Shared HE command handling now owns profile-response bounds, parameter checks
+and active-profile updates. The SN34 adapter retains held-key policy and RGB
+wire-ID translation. Keyboard behavior and read-only default profiles belong to
+each keyboard; chip defaults are shared with the linker. The complete vendor
+EEPROM backend retains its cache, bank format and migration without source-list
+filtering. Matrix hooks and frame consumption share one source file.
+
+| Target | Previous BIN bytes | Current BIN bytes | Previous BSS bytes | Current BSS bytes |
+| --- | ---: | ---: | ---: | ---: |
+| Battle68 default | 89,328 | 89,712 | 70,424 | 61,656 |
+| Battle68 minimal | 86,016 | 86,464 | 70,288 | 61,520 |
+| Synthetic SN34 | 61,024 | 60,984 | 40,544 | 38,400 |
+
+The default saves 8,768 bytes of RAM: 8,192 bytes from report slots sized for the
+actual maximum 32-byte report, and 576 bytes from read-only default profiles.
+Compile-time checks cover every supported report type. Default profiles move
+into Flash; the net default BIN increase is 384 bytes.
+
+Default and minimal each pass 18 unit tests, followed by eight default firmware
+suites and the minimal hook suite. Synthetic passes 11 unit tests (one
+production-only test skipped) and its firmware suite. The RGB/XInput/OTA-disabled
+target passes 18 unit tests and checks of interface count, typing/release, Raw
+HID and configurator export. Tests call the shared HE handler directly to check
+profile-read guard bytes, invalid writes and live global thresholds.
+Full stock `keychron/q1_he/ansi_encoder:keychron` and
+`keychron/k2_he/ansi:keychron` builds also pass, including ELF linking and DFU
+binary generation. Their required ChibiOS/printf submodules, FNV sources,
+encoder driver and DFU suffix utility were populated for these checks.
+
+All exported memory constants, profile sizes, key/calibration tables, USB report
+descriptors and RGB protocol mappings match the preceding binaries. Standalone
+configurator export and settings-preserving OEM updater packaging also pass.
+Final images and results are recorded in
+[simplification-validation.json](simplification-validation.json).
+Builds use ordinary QMK commands; final verification selects the supported
+`SKIP_GIT=yes` option to skip slow version probes in this Windows/WSL checkout.
+No keyboard was flashed; physical behavior and timing were not retested.

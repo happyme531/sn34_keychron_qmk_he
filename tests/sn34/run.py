@@ -26,7 +26,7 @@ def main():
     env = {**os.environ, 'SN34_KEYBOARD':args.keyboard, 'SN34_KEYMAP':args.keymap,
            'SN34_ELF':str(elf), 'SN34_NATIVE_BUILD':str(logs)}
     # Compatibility fixtures describe Battle68; firmware-product tests use the selected ELF.
-    units = ['test_build.py', 'test_host.py']
+    units = ['test_build.py', 'test_host.py', 'test_he_protocol.py']
     if args.keyboard == 'battle68':
         units.append('test_sn34_contracts.py')
     for name in units:
@@ -36,14 +36,14 @@ def main():
         return
     results = []
     for test in target_tests(args.keyboard,args.keymap):
-        path = logs/(Path(test['script']).stem+'.log')
+        path = logs/(Path(test).stem+'.log')
         with path.open('w',encoding='utf-8') as stream:
-            result = subprocess.run([sys.executable,str(ROOT/'tests/sn34'/test['script'])],
+            result = subprocess.run([sys.executable,str(ROOT/'tests/sn34'/test)],
                                     cwd=ROOT,env=env,stdout=stream,stderr=subprocess.STDOUT)
         if result.returncode:
             raise SystemExit(path.read_text(encoding='utf-8'))
-        results.append(test['script'])
-        print('PASS '+test['script'],flush=True)
+        results.append(test)
+        print('PASS '+test,flush=True)
     print(json.dumps(dict(elf=str(elf),passed=results),indent=2))
 
 

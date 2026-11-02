@@ -10,7 +10,6 @@ OPT = 2
 SRC += $(addprefix platforms/sn34/sn34f28x/,startup.S clock.c timebase.c syscalls.c setup.c flash.c)
 SRC += $(addprefix $(SN34_SDK_DIR)/Peripherals/Source/,sn34f28x_hal_gpio.c sn34f28x_hal_scu.c sn34f28x_hal_flash.c sn34f28x_hal_flash_ex.c sn34f28x_hal_rcc.c sn34f28x_hal_iwdg.c)
 SRC += $(addprefix $(SN34_SDK_DIR)/Peripherals/Source/,$(SN34_HAL_SRC))
-SRC := $(filter-out $(SN34_EXCLUDE_SRC),$(SRC))
 EXTRAINCDIRS += $(SN34_BOARD_DIR) platforms/sn34/include
 SN34_SYSTEM_INCLUDES = $(SN34_SDK_DIR)/Com $(SN34_SDK_DIR)/../../Board $(SN34_SDK_DIR)/Peripherals/Include $(SN34_SDK_DIR)/Peripherals/Source $(SN34_DFP_DIR) $(SN34_CMSIS_DIR)/CMSIS/Core/Include
 COMPILEFLAGS += -mcpu=cortex-m4 -mthumb -mfpu=fpv4-sp-d16 -mfloat-abi=softfp
@@ -38,9 +37,9 @@ $(SN34_HID_SOURCE): $(SN34_SDK_DIR)/Middlewares/Source/USB_Device/Class/HID/usbd
 	@patch --silent --batch --forward --fuzz=0 --reject-file=- $@.tmp < platforms/sn34/hid.patch
 	@mv $@.tmp $@
 
-$(SN34_LINKER_SCRIPT): platforms/sn34/sn34f28x/application.ld.S $(SN34_BOARD_DIR)/board_config.h
+$(SN34_LINKER_SCRIPT): platforms/sn34/sn34f28x/application.ld.S $(SN34_BOARD_DIR)/board_config.h platforms/sn34/include/sn34_defaults.h
 	@mkdir -p $(@D)
-	$(CC) -E -P -x c -I$(SN34_BOARD_DIR) $< -o $@
+	$(CC) -E -P -x c -I$(SN34_BOARD_DIR) -Iplatforms/sn34/include $< -o $@
 $(BUILD_DIR)/$(TARGET).elf: $(SN34_LINKER_SCRIPT)
 
 bin: $(BUILD_DIR)/$(TARGET).bin sizeafter
