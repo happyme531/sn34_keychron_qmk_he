@@ -898,7 +898,13 @@ void analog_matrix_rx(uint8_t *data, uint8_t length) {
             uint8_t  rls_sens              = data[6];
             bool     entire                = data[7];
             if (profile >= PROFILE_COUNT || mode > AKM_RAPID || act_pt > 39 || sens > 39 || rls_sens > 39 ||
-                (entire && (!mode || !act_pt || !sens))) goto reject;
+                (entire && (!mode || !act_pt || !sens))) {
+                // Launcher imports send a global/inherit reset before the
+                // per-key writes. Preserve Keychron's command/status reply on
+                // failure so its pending request can finish.
+                data[2] = 1;
+                break;
+            }
             uint32_t row_mask[MATRIX_ROWS] = {0};
             if (!entire) {
                 for (uint8_t i = 0, j = 8; i < MATRIX_ROWS; i++, j += 3) {

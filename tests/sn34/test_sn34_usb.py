@@ -282,9 +282,9 @@ def main():
     # A HE dimensions request must not index row/column 255.
     reply=m.raw_command(bytes((0xa9,0x42,255,255)))
     assert reply[4]==0 and reply[5:9]==bytes((6,0,16,0)),reply.hex()
-    for payload in (bytes((0xa9,0x12,255,0,0,26)),bytes((0xa9,0x12,0,0,0,255)),
-                    bytes((0xa9,0x14,0,2,0,4,4,1))):
+    for payload in (bytes((0xa9,0x12,255,0,0,26)),bytes((0xa9,0x12,0,0,0,255))):
         assert m.raw_command(payload)[0]==255,payload.hex()
+    assert m.raw_command(bytes((0xa9,0x14,0,2,0,4,4,1)))[:3]==bytes((0xa9,0x14,1))
     tests.append("HE dimensions request and malformed/raw unsupported settings are bounded before upstream dispatch")
     result=dict(status="PASS_OFFLINE_NOT_FLASHED",image_sha256=hashlib.sha256(IMAGE).hexdigest(),tests=tests,
         limits=["SPI DMA transfer effects are modeled; real HAL initialization executes", "Physical pin continuity, LED count/order, waveform and host enumeration still need hardware verification"])

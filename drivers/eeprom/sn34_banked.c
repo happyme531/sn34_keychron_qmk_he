@@ -30,7 +30,7 @@ static uint32_t crc32(const void *source, unsigned size) {
 }
 static bool valid(unsigned bank) {
     const header_t *h = (const header_t *)(banks[bank] + EEPROM_SIZE);
-    return h->magic == MAGIC && (h->version == FORMAT_VERSION || h->version == 1) && h->size == EEPROM_SIZE && h->commit == COMMIT &&
+    return h->magic == MAGIC && (h->version == FORMAT_VERSION || h->version == 1 || h->version == 2) && h->size == EEPROM_SIZE && h->commit == COMMIT &&
            h->header_crc == crc32(h, offsetof(header_t, header_crc)) &&
            h->crc == crc32((const void *)banks[bank], EEPROM_SIZE);
 }
@@ -48,6 +48,7 @@ void sn34_eeprom_init(void) {
     if (current >= 0) {
         memcpy(cache, (const void *)banks[current], sizeof(cache));
         sequence = ((const header_t *)(banks[current] + EEPROM_SIZE))->sequence;
+        cached_dirty = sn34_eeprom_version() != FORMAT_VERSION;
     }
 
 }
@@ -91,7 +92,7 @@ static int save_page(uint32_t offset,const void *data){
 int sn34_eeprom_save_step(void) {
     if (!sn34_eeprom_dirty()) return 0;
     if(staged_bank<0 || staged_revision!=sn34_eeprom_revision){
-        if(current>=0 && !memcmp(cache,(const void *)banks[current],sizeof(cache))){cached_dirty=false;staged_bank=-1;return 0;}
+        if(current>=0 && sn34_eeprom_version()==FORMAT_VERSION && !memcmp(cache,(const void *)banks[current],sizeof(cache))){cached_dirty=false;staged_bank=-1;return 0;}
         memcpy(staged,cache,sizeof(staged));staged_bank=current==0?1:0;staged_page=0;
         staged_revision=sn34_eeprom_revision;
         staged_header=(header_t){.magic=MAGIC,.version=FORMAT_VERSION,.sequence=sequence+1,.size=EEPROM_SIZE,

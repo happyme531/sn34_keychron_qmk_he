@@ -9,7 +9,7 @@ import os
 from pathlib import Path
 import struct
 from firmware import Firmware, ROOT, keyboard_definition
-from settings import read_banks
+from settings import read_banks, newest_bank
 
 
 def sha(data):return hashlib.sha256(data).hexdigest()
@@ -19,17 +19,15 @@ def preserve_settings(application, previous, firmware):
     memory=firmware.memory
     records=read_banks(previous,memory)
     if not records:raise ValueError('Backup has no compatible committed settings bank')
-    newest=records[0]
-    for record in records[1:]:
-        distance=(record['sequence']-newest['sequence'])&0xffffffff
-        if 0<distance<0x80000000:newest=record
+    newest=newest_bank(records)
+    if newest['version'] == 2 and memory['eeprom_version'] >= 3 and any(newest['payload'][-2:]):
+        raise ValueError('v2 macro buffer is full or unfinished; export/shorten its macros before migration')
     result=bytearray(application)
     for record in records:
         bank=record['bank']
         result[bank:bank+memory['eeprom_size']]=record['payload']
         result[bank+memory['eeprom_size']:bank+memory['eeprom_bank_size']]=record['header']
-    # Keep committed bytes intact. The firmware migrates v1 to stock HE layout;
-    # startup compatibility is tested separately, outside production packaging.
+    # Keep committed banks intact; firmware handles versioned layout migration.
     return bytes(result),{'backup_sha256':sha(previous),'sequence':newest['sequence'],'banks':len(records)}
 
 
@@ -69,9 +67,6 @@ def main():
     args=parser.parse_args()
     os.environ['SN34_KEYBOARD']=args.keyboard
     keyboard_definition(args.keyboard)
-    target_path=ROOT/'keyboards'/args.keyboard/'board/updater.json'
-    if not target_path.is_file():parser.error('Selected keyboard has no production packaging contract')
-    target=json.loads(target_path.read_text(encoding='utf-8'))
     firmware=Firmware(args.elf)
     firmware.validate_keyboard(args.keyboard)
     application=firmware.application()
@@ -85,6 +80,9 @@ def main():
             'source_image_sha256':sha(firmware.code),'application_sha256':sha(application),
             'hardware_verified':False,'settings':settings,'bootloader':'custom'}
     if args.updater_template:
+        target_path=ROOT/'keyboards'/args.keyboard/'board/updater.json'
+        if not target_path.is_file():parser.error('Selected keyboard has no OEM updater contract')
+        target=json.loads(target_path.read_text(encoding='utf-8'))
         wrapper,checksum=wrap_updater(args.updater_template.read_bytes(),application,target)
         (output/'updater.exe').write_bytes(wrapper)
         record.update(updater_sha256=sha(wrapper),checksum=f'0x{checksum:04X}')

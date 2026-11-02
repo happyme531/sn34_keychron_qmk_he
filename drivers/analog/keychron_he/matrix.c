@@ -37,7 +37,7 @@ static uint32_t last_frame;
 static uint16_t scan_depth;
 
 void matrix_setup(void) {
-    sn34_he_calibration_init();
+    if (!sn34_he_calibration_init()) sn34_bootloader_enter();
     if (native_scan_init()) sn34_bootloader_enter();
 }
 

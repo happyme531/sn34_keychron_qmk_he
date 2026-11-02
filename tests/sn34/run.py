@@ -26,7 +26,7 @@ def main():
     env = {**os.environ, 'SN34_KEYBOARD':args.keyboard, 'SN34_KEYMAP':args.keymap,
            'SN34_ELF':str(elf), 'SN34_NATIVE_BUILD':str(logs)}
     # Compatibility fixtures describe Battle68; firmware-product tests use the selected ELF.
-    units = ['test_build.py', 'test_host.py', 'test_he_protocol.py']
+    units = ['test_build.py', 'test_host.py', 'test_he_protocol.py', 'test_backup.py']
     if args.keyboard == 'battle68':
         units.append('test_sn34_contracts.py')
     for name in units:

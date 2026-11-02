@@ -1,4 +1,4 @@
-"""Exercise shared HE handlers directly, without SN34's held-key/RGB policy."""
+"""Exercise shared HE handlers and Launcher requests through Raw HID."""
 import sys
 import unittest
 from pathlib import Path
@@ -55,10 +55,38 @@ class SharedHeProtocol(unittest.TestCase):
         revision = bytes(self.keyboard.u.mem_read(SYMS['sn34_eeprom_revision'], 4))
         for packet in invalid:
             with self.subTest(packet=packet):
-                self.assertEqual(self.command(packet)[0], 255)
+                reply = self.command(packet)
+                if packet[1] == 0x14:
+                    self.assertEqual(reply[:3], bytes((0xa9, 0x14, 1)))
+                else:
+                    self.assertEqual(reply[0], 255)
                 self.assertEqual(bytes(self.keyboard.u.mem_read(SYMS['profile'], size)), profiles)
                 self.assertEqual(bytes(self.keyboard.u.mem_read(SYMS['sn34_eeprom_revision'], 4)), revision)
                 self.assertEqual(self.command((0xa9, 0x20))[2:10], curve)
+
+    def test_launcher_import_reset_reply_and_writes_during_key_activity(self):
+        keyboard = self.keyboard
+        # Captured from Launcher 1.5.3 importing a real HEProfile export.
+        reset = bytes.fromhex('a91401000c040401000000000000000000000000000000000000000000000000')
+        profiles = bytes(keyboard.u.mem_read(SYMS['profile'], FIRMWARE.symbols['profile']['st_size']))
+        self.assertEqual(keyboard.raw_command(reset)[:3], bytes((0xa9, 0x14, 1)))
+        self.assertEqual(bytes(keyboard.u.mem_read(SYMS['profile'], len(profiles))), profiles)
+        key = KEYS[0]
+        row, col = key['matrix']
+        keyboard.call('dynamic_keymap_set_keycode', 0, row, col, 4)
+        mask = bytearray(18)
+        mask[row * 3:row * 3 + 3] = (1 << col).to_bytes(3, 'little')
+        for travel in (12, 140):
+            keyboard.travel_key(key, travel)
+            keyboard.step()
+            self.assertFalse(keyboard.call('sn34_physical_released'))
+            for packet in (bytes((0xa9, 0x14, 1, 2, 12, 4, 4, 0)) + mask,
+                           bytes((0xa9, 0x1f, 1))):
+                self.assertEqual(keyboard.raw_command(packet)[:3], packet[:2] + b'\0')
+        self.assertTrue(keyboard.pressed(4))
+        keyboard.travel_key(key, 0)
+        keyboard.step()
+        self.assertFalse(keyboard.pressed(4))
 
     def test_global_threshold_changes_refresh_only_the_active_profile(self):
         key = KEYS[0]

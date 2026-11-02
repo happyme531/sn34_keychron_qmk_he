@@ -84,9 +84,27 @@ memory bounds and the selected keyboard's USB identity. The optional external
 updater must match `board/updater.json`. Settings preservation checks bank CRCs
 against the compiled ELF's memory bounds and copies committed banks intact.
 Startup compatibility is checked by the separate offline tests, not packaging.
-Firmware converts v1 settings to the restored stock HE layout in RAM and
-commits a v2 bank only through the ordinary background save engine.
-Synthetic targets have no production packaging contract.
+SN34 v3 keeps the profile byte separate from calibration. v1 payloads remain
+unchanged; v2 payloads migrate in RAM and commit through the background save
+engine. The stock Keychron default layout remains unchanged. An OEM contract is
+only needed when `--updater-template` is selected; ordinary application images
+and independent flashing do not need it.
+
+## Flashing
+
+The independent path uses SonixFlasherC and the retained ISP Bootloader;
+the official updater is optional. Configure `SN34_FLASHER`, then run:
+
+```sh
+qmk flash -kb battle68 -km default
+```
+
+This builds the ELF, snapshots live settings over Raw HID, creates the complete
+application image with those settings, calls SonixFlasherC, and verifies the
+complete settings cache after reboot. Older firmware without the snapshot
+command needs an existing `--settings-backup` for the first upgrade or an
+explicit `--reset-settings`. See [flashing instructions](flashing.md) for the
+Windows/WSL setup, preparation without flashing, and migration limits.
 
 ## Offline tests
 

@@ -12,7 +12,7 @@ This fork is based on Keychron QMK `2025q3`, commit
 | `drivers/eeprom/sn34*` | Cached EEPROM and CRC-protected two-bank commits |
 | `drivers/led/ws2812_sn34.c` | SPI/DMA WS2812 output |
 | `keyboards/<keyboard>` | QMK metadata, feature rules, board wiring, policy and keymaps |
-| `util/sn34` | Optional packaging, Raw HID configuration and configurator export |
+| `util/sn34` | Packaging, independent flashing, Raw HID configuration and configurator export |
 | `tests/sn34` | Offline ARM emulation and independent compatibility fixtures |
 
 QMK's `quantum/main.c` owns the lifecycle. Keychron HE algorithms remain in
@@ -60,27 +60,35 @@ inflate every queue entry. The EEPROM driver supplies the complete vendor API,
 including initialization and capacity, without filtering QMK's source list.
 
 Shared HE command handling owns packet bounds, parameter validation and live
-profile updates. The SN34 Raw HID adapter owns only held-key policy and RGB
-wire-ID translation. Matrix hooks, frame consumption and travel conversion live
+profile updates. The SN34 Raw HID adapter owns the NKRO switch policy, RGB wire-ID
+translation and a bounded read-only settings snapshot command. HE configuration
+uses the ordinary Keychron handler without an SN34 input-activity gate. Matrix hooks,
+frame consumption and travel conversion live
 in one translation unit; the ADC producer and the optimized HE frame hook stay
 separate. Calibration uses the board's maintained fallback endpoints.
 
 Battle68 preserves its v36 matrix coordinates, physical Fn at `(0,0)`, EEPROM
-banks and VIA compatibility date. The shared HE header uses the original stock
-layout. A v1-to-v2 bank migration moves calibration and subsequent VIA data back
-one byte before QMK initialization. This deliberately restores stock's overlap
-between the profile index and the first calibration byte. Independent fixtures
-check these boundaries. `sn34_test` exercises a different
+banks and VIA compatibility date. The shared HE header defaults to the original
+stock layout; SN34 overrides only the calibration start to reserve a separate
+profile byte. v3 restores v1's non-overlapping payload layout. v1 banks need only
+a header-version update; v2 banks shift calibration and subsequent VIA data
+right in RAM before QMK initialization. Background commits leave the previous
+bank intact until the new header is complete. Independent v1 and v2 fixtures
+check these boundaries and all physical calibration endpoints. `sn34_test` exercises a different
 3x5 matrix, 16 sampled slots, two phases, 12 switches, five LEDs and different
 EEPROM banks. It is a synthetic test target, not a physical hardware port.
 
 ## Optional host tools
 
-Only `device.py`, `export.py` and `package.py` are command entry points.
-`firmware.py` reads a standard ELF for the latter tools and offline tests.
+`device.py`, `export.py`, `package.py`, `backup.py` and `flash.py` are command
+entry points. `firmware.py` reads a standard ELF for these tools and offline tests.
 The old generator, build wrapper, object import and source-manifest framework
 have been removed. Packaging is an explicit operation; it can preserve a
-compatible settings backup and wrap an external OEM updater.
+compatible settings backup and optionally wrap an external OEM updater.
+The ordinary QMK `flash` target runs backup, packaging, SonixFlasherC and
+post-reboot configuration verification. The firmware snapshot reads only the
+logical EEPROM cache and checks its revision on each packet; it never exposes
+arbitrary Flash reads or writes. See [flashing details](flashing.md).
 
 See [build instructions](build.md), [porting notes](porting.md) and
 [validation history](validation.md). Historical records describe the workflow

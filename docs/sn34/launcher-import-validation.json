@@ -1,0 +1,41 @@
+{
+  "date": "2026-11-03T05:11:01.601549+08:00",
+  "status": "FLASHED_SETTINGS_VERIFIED_AND_USER_CONFIRMED",
+  "keyboard": "battle68",
+  "firmware": "v2.0.0 2026-11-03-04:58:35",
+  "code_sha256": "3d2ef3e4698f5d00f8cad249007031f58cd32b4c3a089217d284977387e47aef",
+  "application_sha256": "f8c9e97419b471ac79f332fbfefce09e288d0d9fddb1aab1fa7211b0482187f4",
+  "source_profile": {
+    "filename": "HEProfile-\u7535\u7ade\u6a21\u5f0f-2026-11-03.json",
+    "sha256": "1839100f2a82d6dd4f88a93ee4ca6673dfe29262b73bdad46e9a0edea77ab5a0"
+  },
+  "official_launcher": {
+    "version": "1.5.3",
+    "origin": "https://launcher.keychron.com",
+    "bundle": "main.f6e30fd5066dd94a.js",
+    "bundle_sha256": "5fcd8acf6933918a482a29ebc05c9663d5d36ffb01f3f58943754ad625e47002"
+  },
+  "reproduced": {
+    "loading_overlay_stuck": true,
+    "captured_packets": 164,
+    "rejected_responses": [
+      "ff1401000c040401000000000000000000000000000000000000000000000000",
+      "ff1401020c040400000000400000000000000000000000000000000000000000"
+    ]
+  },
+  "fixes": [
+    "Return standard A9/14 failure status for rejected travel writes, preserving command correlation",
+    "Use the ordinary Keychron HE dispatcher without SN34 Hall-release gates",
+    "Keep parameter and memory-bound validation"
+  ],
+  "regression_checks": [
+    "Global/inherit reset receives the correlated A9/14 failure status without changing profiles",
+    "Valid HE writes through ordinary Raw HID complete during Hall jitter and held keys",
+    "Releasing a held key after configuration writes leaves no stuck report"
+  ],
+  "settings_preserved": true,
+  "flasher_commit": "43c6d7432fcca27beeead12bca06b4dbf7a87d15",
+  "user_confirmed_import": true,
+  "automation_limit": "The failing UI import was reproduced and traced; successful UI automation was not completed before the user confirmed the fix.",
+  "evidence_directory": ".build/hardware/launcher_import_20261103_044222"
+}

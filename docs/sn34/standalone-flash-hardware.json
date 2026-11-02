@@ -1,0 +1,120 @@
+{
+  "date": "2026-11-03T03:38:30.417249+08:00",
+  "status": "FLASHED_AND_AUTOMATIC_UPGRADE_SETTINGS_VERIFIED",
+  "user_authorization": {
+    "flash": true,
+    "initial_settings": "reset to defaults; user will restore manual backup"
+  },
+  "device": {
+    "serial": "B68QMK002",
+    "firmware": "v2.0.0 2026-11-03-03:31:26",
+    "usb_interfaces": [
+      0,
+      1,
+      2,
+      3,
+      4
+    ],
+    "code_sha256": "a7beb931b6a1c5c136b2e81a67bcd96d869a500099fe7183cb58b21dc195ef82",
+    "calibration_keys_read": 67
+  },
+  "initial_reset": {
+    "keyboard": "battle68",
+    "application_sha256": "a759b6919bf051511f7461a1623458ced0b80069e1e736e094b067f8bdad304e",
+    "settings": null,
+    "reset_settings": true,
+    "command": [
+      ".build/standalone-flash/windows\\sonixflasher.exe",
+      "-v",
+      "0c45/8037",
+      "--boot-vid-pid",
+      "0c45/7210",
+      "-r",
+      "sonix",
+      "-o",
+      "0",
+      "-f",
+      "C:\\Users\\23020\\Downloads\\bat68fw\\sn34_qmk\\.build\\hardware\\independent_flash_20261103_031903\\updated-default-flash\\application.bin"
+    ],
+    "status": "verified",
+    "firmware_reported": "v2.0.0 2026-11-03-03:31:26",
+    "settings_verified": false
+  },
+  "automatic_upgrade": {
+    "keyboard": "battle68",
+    "application_sha256": "2929e3b103e26f0772e059da12dbf86d0df30d376735e54c66e8851954616a4f",
+    "settings": {
+      "kind": "sn34-settings-snapshot",
+      "keyboard": "battle68",
+      "serial": "B68QMK002",
+      "revision": 680,
+      "storage_version": 3,
+      "payload_sha256": "8e08564bb2ee8eea38f13af32cf2ada363d321a8466549588a8207dc18bf9ed5",
+      "code_backup": false,
+      "backup_sha256": "ac8751c6d1b2b5b907389323f6502c1b0d8b9c70e381b9b3e1f65cc94868b5f8",
+      "sequence": 1,
+      "banks": 1
+    },
+    "reset_settings": false,
+    "command": [
+      ".build/standalone-flash/windows\\sonixflasher.exe",
+      "-v",
+      "0c45/8037",
+      "--boot-vid-pid",
+      "0c45/7210",
+      "-r",
+      "sonix",
+      "-o",
+      "0",
+      "-f",
+      "C:\\Users\\23020\\Downloads\\bat68fw\\sn34_qmk\\.build\\hardware\\independent_flash_20261103_031903\\automatic-upgrade\\application.bin"
+    ],
+    "status": "verified",
+    "firmware_reported": "v2.0.0 2026-11-03-03:31:26",
+    "settings_verified": true
+  },
+  "settings_verification": {
+    "bytes": 7680,
+    "payload_sha256": "8e08564bb2ee8eea38f13af32cf2ada363d321a8466549588a8207dc18bf9ed5",
+    "compared_after_reboot": true,
+    "storage_version": 3
+  },
+  "application_checksum": "0x3f11",
+  "flasher": {
+    "checkout": "../SonixFlasherC",
+    "base_commit": "e6ba5db11f703f89fd29a5bc0e56ed1ae42604c3",
+    "offline_suites": 4,
+    "strict_lint": "passed (GCC)",
+    "native_windows_protocol_suite": "passed",
+    "native_windows_build": "MinGW x64, static HIDAPI, -Wall -Wextra -Werror",
+    "executable": ".build/standalone-flash/windows/sonixflasher.exe",
+    "executable_sha256": "3c9ee4d1aed38711b4e89a4a66e52b5b3ce36c0a65b50203432eb292e28909fc",
+    "sn34_verification": "erase and program completion ACK plus embedded full-image checksum; no standalone 0x06 query",
+    "commit": "43c6d7432fcca27beeead12bca06b4dbf7a87d15"
+  },
+  "snapshot_busy_detection": false,
+  "official_updater_used": false,
+  "evidence_directory": ".build/hardware/independent_flash_20261103_031903",
+  "issues_found_and_fixed": [
+    {
+      "issue": "Standalone ISP checksum command 0x06 did not return a ready response after erase and stalled USB control transfers",
+      "recovery": "User unplugged/reconnected once; corrected independent flasher restored the application directly from ISP",
+      "fix": "Use verified erase/program completion ACKs and their full-image checksums for SN34; preserve standalone queries for other chips"
+    },
+    {
+      "issue": "Read-only snapshot busy detection rejected unactuated Hall jitter",
+      "fix": "Removed all snapshot input/calibration busy checks at user request; retained bounds checks and revision consistency retries"
+    }
+  ],
+  "limits": [
+    "Final physical typing, Fn feel and cold power cycle need user checks.",
+    "The ISP protocol provides a 16-bit checksum; no full executable readback was performed.",
+    "The first optional pre-flash public calibration dump was not saved because a temporary script shadowed Python inspect; it was renamed before post-flash inspection."
+  ],
+  "follow_up": {
+    "record": "launcher-import-validation.json",
+    "firmware": "v2.0.0 2026-11-03-04:58:35",
+    "settings_preserved": true,
+    "user_confirmed_import": true
+  }
+}

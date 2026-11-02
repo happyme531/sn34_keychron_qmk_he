@@ -128,3 +128,5 @@ via*.json
 /tools/
 
 .sn34-local.mk
+
+!/tests/sn34/boards/battle68/fixtures/sn34_v2_eeprom.bin

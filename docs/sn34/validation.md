@@ -1,5 +1,14 @@
 # Refactor validation
 
+Current independent flashing and calibration migration checks are recorded in
+[standalone-flash-validation.json](standalone-flash-validation.json); physical
+flashing and automatic configuration preservation are recorded in
+[standalone-flash-hardware.json](standalone-flash-hardware.json). The
+Launcher HE import regression and subsequent user confirmation are recorded in
+[launcher-import-validation.json](launcher-import-validation.json). The
+current workflow is documented in [flashing.md](flashing.md); earlier v2 layout
+descriptions below are historical and superseded by SN34 v3.
+
 This is the historical validation record before custom diagnostics were removed.
 For the current source tree, see [the cleanup validation](cleanup-validation.md).
 
