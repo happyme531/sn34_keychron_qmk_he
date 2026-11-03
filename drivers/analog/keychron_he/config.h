@@ -4,9 +4,7 @@
 #include "platform_deps.h"
 #endif
 #include "board_config.h"
-#define IGNORE_ATOMIC_BLOCK
-#define ANALOG_MATRIX_PLATFORM_HEADER "hall_curve.h"
-#define ANALOG_MATRIX_FRAME_IMPL "he_frame.inc"
+#define ANALOG_MATRIX_PLATFORM_HEADER "sn34_he.h"
 #define ANALOG_MATRIX_TRAVEL_CONVERT sn34_hall_convert
 #define ANALOG_MATRIX_FN_ACTIVE (SN34_PROFILE_HOTKEYS_ENABLE && (layer_state & SN34_FN_LAYER_MASK))
 #define ANALOG_MATRIX_CALIBRATION_OFFSET (OFFSET_CURRENT_PROFILE + 1)
@@ -30,8 +28,8 @@
 #define VIA_FIRMWARE_VERSION 5
 #define VIA_EEPROM_COMPAT_DATE SN34_VIA_EEPROM_DATE
 
-// The HE adapter and fixed shared report layout require these QMK features.
-// Select them in rules.mk so source selection and preprocessor flags agree.
-#if !defined(RAW_ENABLE) || !defined(VIA_ENABLE) || !defined(NKRO_ENABLE) || !defined(JOYSTICK_ENABLE) || !defined(MOUSEKEY_ENABLE) || !defined(EXTRAKEY_ENABLE)
-#error "SN34 HE requires Raw HID, VIA, NKRO, joystick, mouse keys and extra keys in rules.mk"
+// The Launcher adapter uses VIA's Raw HID dispatcher. Other report features
+// remain ordinary, optional QMK build settings.
+#if !defined(RAW_ENABLE) || !defined(VIA_ENABLE)
+#error "SN34 HE configuration requires Raw HID and VIA in rules.mk"
 #endif

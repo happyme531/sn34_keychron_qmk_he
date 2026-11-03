@@ -1,0 +1,268 @@
+{
+  "date": "2026-11-03T18:18:27.756246+08:00",
+  "base_commit": "72571a3",
+  "status": "PASS_OFFLINE_NOT_FLASHED",
+  "targets": [
+    {
+      "target": "default",
+      "elf": ".build/review-cleanup/final/default/battle68_default.elf",
+      "image_sha256": "39f6c5b59e4410b8137272c1c7f142286e394ff7fd9e3f269f727a66996d1749",
+      "bin_bytes": 89856,
+      "data_bytes": 1192,
+      "bss_bytes": 61600,
+      "features": {
+        "rgb": true,
+        "xinput": true,
+        "ota": true
+      },
+      "unit_tests_passed": 34,
+      "unit_tests_skipped": 0,
+      "firmware_suites": [
+        "test_bat68.py",
+        "test_sn34_features.py",
+        "test_sn34_usb.py",
+        "test_storage.py",
+        "test_sn34_lifecycle.py",
+        "test_native_scan.py",
+        "test_native_boot.py",
+        "test_keychron_eeprom.py"
+      ],
+      "before_elf": ".build/review-cleanup-before/battle68_default.elf",
+      "before_bin_bytes": 89984,
+      "before_bss_bytes": 61656,
+      "unchanged_memory_layout": true,
+      "identical_tables_and_descriptors": [
+        "board_keys",
+        "sn34_hall_adc_curve",
+        "device_desc",
+        "KeyboardReport",
+        "SharedReport",
+        "RawReport",
+        "ota_report",
+        "profile_gobal_mode",
+        "default_profiles",
+        "sn34_rgb_wire_to_core",
+        "sn34_rgb_core_to_wire"
+      ],
+      "profile_layout_unchanged": true,
+      "identical_configurator_exports": true,
+      "legacy_versions": 6
+    },
+    {
+      "target": "minimal",
+      "elf": ".build/review-cleanup/final/minimal/battle68_minimal.elf",
+      "image_sha256": "366c24167808c62e069a01dfb20ced51ed5bf6731aadf66bbb7d656c058a9d45",
+      "bin_bytes": 86672,
+      "data_bytes": 1152,
+      "bss_bytes": 61464,
+      "features": {
+        "rgb": true,
+        "xinput": true,
+        "ota": true
+      },
+      "unit_tests_passed": 34,
+      "unit_tests_skipped": 0,
+      "firmware_suites": [
+        "test_sn34_hooks.py"
+      ],
+      "before_elf": ".build/standalone-flash/minimal/battle68_minimal.elf",
+      "before_bin_bytes": 86672,
+      "before_bss_bytes": 61520,
+      "unchanged_memory_layout": true,
+      "identical_tables_and_descriptors": [
+        "board_keys",
+        "sn34_hall_adc_curve",
+        "device_desc",
+        "KeyboardReport",
+        "SharedReport",
+        "RawReport",
+        "ota_report",
+        "profile_gobal_mode",
+        "default_profiles",
+        "sn34_rgb_wire_to_core",
+        "sn34_rgb_core_to_wire"
+      ],
+      "profile_layout_unchanged": true,
+      "identical_configurator_exports": true,
+      "legacy_versions": 6
+    },
+    {
+      "target": "synthetic",
+      "elf": ".build/review-cleanup/final/synthetic/sn34_test_default.elf",
+      "image_sha256": "76ebfc79f37bc7986ce101b2deed21660f0be7f9a63645f4488c279f1619f8d4",
+      "bin_bytes": 61000,
+      "data_bytes": 640,
+      "bss_bytes": 38328,
+      "features": {
+        "rgb": false,
+        "xinput": false,
+        "ota": false
+      },
+      "unit_tests_passed": 27,
+      "unit_tests_skipped": 1,
+      "firmware_suites": [
+        "test_second_target.py"
+      ],
+      "before_elf": ".build/standalone-flash/synthetic/sn34_test_default.elf",
+      "before_bin_bytes": 61192,
+      "before_bss_bytes": 38400,
+      "unchanged_memory_layout": true,
+      "identical_tables_and_descriptors": [
+        "board_keys",
+        "sn34_hall_adc_curve",
+        "device_desc",
+        "KeyboardReport",
+        "SharedReport",
+        "RawReport",
+        "profile_gobal_mode",
+        "default_profiles"
+      ],
+      "profile_layout_unchanged": true,
+      "identical_configurator_exports": true,
+      "legacy_versions": 0
+    },
+    {
+      "target": "features-off",
+      "elf": ".build/review-cleanup/final/features-off/battle68_default.elf",
+      "image_sha256": "0df35186735e329a002e7e9b029e8f63434c958ccb93815e65790ba298b76249",
+      "bin_bytes": 67336,
+      "data_bytes": 688,
+      "bss_bytes": 59504,
+      "features": {
+        "rgb": false,
+        "xinput": false,
+        "ota": false
+      },
+      "unit_tests_passed": 34,
+      "unit_tests_skipped": 0,
+      "firmware_suites": []
+    }
+  ],
+  "stock_he_builds": [
+    {
+      "target": "stock-q1",
+      "elf": ".build/review-simplification/stock-q1/keychron_q1_he_ansi_encoder_keychron.elf",
+      "compiled": true
+    },
+    {
+      "target": "stock-k2",
+      "elf": ".build/review-simplification/stock-k2/keychron_k2_he_ansi_keychron.elf",
+      "compiled": true
+    }
+  ],
+  "scan_instruction_comparison": {
+    "metric": "ARM instructions executed per complete QMK loop in Unicorn; not physical cycles",
+    "before": {
+      "idle": 6421,
+      "all-pressed": 329500,
+      "all-moved": 16569,
+      "all-released": 172081,
+      "idle-again": 6518
+    },
+    "after": {
+      "idle": 6485,
+      "all-pressed": 329290,
+      "all-moved": 16499,
+      "all-released": 172021,
+      "idle-again": 6582
+    },
+    "change_percent": {
+      "idle": 0.997,
+      "all-pressed": -0.064,
+      "all-moved": -0.422,
+      "all-released": -0.035,
+      "idle-again": 0.982
+    }
+  },
+  "inheritance": [
+    {
+      "mode": "inherited",
+      "elf": ".build\\review-cleanup\\inherited\\sn34_inheritance_probe__3e9x_w7_ansi_default.elf",
+      "pid": 53,
+      "typing": true,
+      "inherited_wiring": true,
+      "inherited_labels": true,
+      "linker_transitive_dependencies": true,
+      "interfaces": 3
+    },
+    {
+      "mode": "lean",
+      "elf": ".build\\review-cleanup\\lean\\sn34_inheritance_probe__3e9x_w7_ansi_default.elf",
+      "pid": 53,
+      "typing": true,
+      "inherited_wiring": true,
+      "inherited_labels": true,
+      "linker_transitive_dependencies": true,
+      "interfaces": 2
+    }
+  ],
+  "qmk_metadata_parity": {
+    "keyboard": "sn34_inheritance_probe__3e9x_w7/ansi",
+    "usb": {
+      "pid": "0x0035",
+      "vid": "0xFEED",
+      "device_version": "2.0.0"
+    },
+    "layout_keys": 12,
+    "qmk_metadata_equal": true
+  },
+  "alternate_joystick_layout": {
+    "elf": ".build\\review-cleanup\\hat\\sn34_inheritance_probe_0yrhrd5t_ansi_default.elf",
+    "image_sha256": "5aa330c34468183b1c224b72f534d62044c63dfe19d4a21575bc72e703757811",
+    "report_bytes": 10,
+    "axes": 6,
+    "buttons": 16,
+    "hat": true,
+    "queued_counts": [
+      0,
+      1,
+      1,
+      2,
+      3
+    ],
+    "axis_updates_coalesced": true,
+    "hat_transitions_preserved": true,
+    "button_transitions_preserved": true,
+    "typing_and_release": true
+  },
+  "features_off_smoke": {
+    "features": {
+      "rgb": false,
+      "xinput": false,
+      "ota": false
+    },
+    "image_sha256": "0df35186735e329a002e7e9b029e8f63434c958ccb93815e65790ba298b76249",
+    "interfaces": 3,
+    "typing_and_release": true,
+    "raw_hid": true,
+    "disabled_xinput_rejected": true,
+    "lighting_menus_omitted": true
+  },
+  "oem_package": {
+    "keyboard": "battle68",
+    "source_image_sha256": "39f6c5b59e4410b8137272c1c7f142286e394ff7fd9e3f269f727a66996d1749",
+    "application_sha256": "ffcfc8aad4fcd338b3c608242a014aa520bd31cf359c89e9ef50395dae4e199f",
+    "hardware_verified": false,
+    "settings": {
+      "backup_sha256": "c5c87e53070cff54a1039d09746b16656d8ef82f1d17bdef832e42b30de9c746",
+      "sequence": 1,
+      "banks": 1
+    },
+    "bootloader": "custom",
+    "updater_sha256": "0fbe72248db85398e25b396e5283dad16854ae46022bf8b24db66c1163d81daa",
+    "checksum": "0xA29C"
+  },
+  "settings_banks_preserved_byte_exact": true,
+  "independent_flash_prepare_only": true,
+  "atomic_checks": [
+    "Initially enabled and initially masked IRQs",
+    "Nested RESTORESTATE blocks",
+    "Early return cleanup",
+    "Break cleanup and FORCEON"
+  ],
+  "nonzero_application_origin_rejected": true,
+  "limitations": [
+    "No device was flashed. Physical ADC/USB/Flash effects and real timing were not revalidated.",
+    "The inherited/lean/hat targets were temporary compile fixtures, not hardware ports."
+  ]
+}

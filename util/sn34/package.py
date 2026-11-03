@@ -8,8 +8,8 @@ import json
 import os
 from pathlib import Path
 import struct
-from firmware import Firmware, ROOT, keyboard_definition
-from settings import read_banks, newest_bank
+from firmware import Firmware, ROOT, keyboard_definition, keyboard_file
+from settings import read_banks, newest_bank, migrated_payload
 
 
 def sha(data):return hashlib.sha256(data).hexdigest()
@@ -20,8 +20,7 @@ def preserve_settings(application, previous, firmware):
     records=read_banks(previous,memory)
     if not records:raise ValueError('Backup has no compatible committed settings bank')
     newest=newest_bank(records)
-    if newest['version'] == 2 and memory['eeprom_version'] >= 3 and any(newest['payload'][-2:]):
-        raise ValueError('v2 macro buffer is full or unfinished; export/shorten its macros before migration')
+    migrated_payload(newest, memory)  # Check legacy migration before writing any output.
     result=bytearray(application)
     for record in records:
         bank=record['bank']
@@ -80,8 +79,10 @@ def main():
             'source_image_sha256':sha(firmware.code),'application_sha256':sha(application),
             'hardware_verified':False,'settings':settings,'bootloader':'custom'}
     if args.updater_template:
-        target_path=ROOT/'keyboards'/args.keyboard/'board/updater.json'
-        if not target_path.is_file():parser.error('Selected keyboard has no OEM updater contract')
+        try:
+            target_path=keyboard_file('board/updater.json', args.keyboard)
+        except FileNotFoundError:
+            parser.error('Selected keyboard has no OEM updater contract')
         target=json.loads(target_path.read_text(encoding='utf-8'))
         wrapper,checksum=wrap_updater(args.updater_template.read_bytes(),application,target)
         (output/'updater.exe').write_bytes(wrapper)

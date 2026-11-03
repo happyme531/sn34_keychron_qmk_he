@@ -98,7 +98,8 @@ class SettingsSnapshots(unittest.TestCase):
         memory = dict(FIRMWARE.memory, eeprom_version=2)
         payload = bytearray(memory['eeprom_size'])
         payload[-2] = 1
-        with self.assertRaisesRegex(ValueError, 'macro buffer'):
+        reason = 'macro buffer' if memory['eeprom_legacy_versions'] & (1 << 2) else 'compatible committed settings bank'
+        with self.assertRaisesRegex(ValueError, reason):
             preserve_settings(FIRMWARE.application(), snapshot_image(payload, memory), FIRMWARE)
 
     def test_post_flash_verification_detects_a_changed_setting(self):

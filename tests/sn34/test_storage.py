@@ -58,7 +58,7 @@ def main():
     assert bytes(legacy_v2.u.mem_read(SYMS['cache'],LAYOUT.eeprom_size))==expected_v3
     legacy_v2.call('eeprom_update_byte',LAYOUT.eeprom_size-1,1)
     before=bytes(legacy_v2.u.mem_read(SYMS['cache'],LAYOUT.eeprom_size))
-    assert not legacy_v2.call('sn34_he_calibration_init')
+    assert not legacy_v2.call('sn34_eeprom_migrate')
     assert bytes(legacy_v2.u.mem_read(SYMS['cache'],LAYOUT.eeprom_size))==before
     assert not legacy_v2.flash
     legacy_v2.call('eeprom_update_byte',LAYOUT.eeprom_size-1,0)

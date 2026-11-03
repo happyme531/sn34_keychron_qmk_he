@@ -6,6 +6,7 @@
 #include "sn34_eeprom.h"
 #include "sn34_flash.h"
 #include "sn34f28x_hal.h"
+#include "atomic_util.h"
 
 #include "nvm_eeprom_eeconfig_internal.h"
 enum { PAGE_SIZE=SN34_PAGE_SIZE, MAGIC=SN34_EEPROM_MAGIC, COMMIT=SN34_EEPROM_COMMIT, FORMAT_VERSION=SN34_EEPROM_VERSION };
@@ -30,7 +31,9 @@ static uint32_t crc32(const void *source, unsigned size) {
 }
 static bool valid(unsigned bank) {
     const header_t *h = (const header_t *)(banks[bank] + EEPROM_SIZE);
-    return h->magic == MAGIC && (h->version == FORMAT_VERSION || h->version == 1 || h->version == 2) && h->size == EEPROM_SIZE && h->commit == COMMIT &&
+    bool supported = h->version == FORMAT_VERSION ||
+        (h->version < 32 && (SN34_EEPROM_LEGACY_VERSIONS & (1u << h->version)));
+    return h->magic == MAGIC && supported && h->size == EEPROM_SIZE && h->commit == COMMIT &&
            h->header_crc == crc32(h, offsetof(header_t, header_crc)) &&
            h->crc == crc32((const void *)banks[bank], EEPROM_SIZE);
 }
@@ -81,10 +84,18 @@ bool sn34_eeprom_dirty(void) { return cached_dirty; }
 uint32_t sn34_eeprom_version(void) {
     return current < 0 ? FORMAT_VERSION : ((const header_t *)(banks[current] + EEPROM_SIZE))->version;
 }
+__attribute__((weak)) bool sn34_eeprom_migrate(void) { return true; }
+
+// This bank-only operation is part of the EEPROM driver, not a chip API.
+__attribute__((noinline)) int sn34_flash_write_eeprom_page(uint32_t user_offset, const void *data) {
+    bool first = user_offset >= SN34_EEPROM_BANK0 && user_offset < SN34_EEPROM_BANK0 + SN34_EEPROM_BANK_SIZE;
+    bool second = user_offset >= SN34_EEPROM_BANK1 && user_offset < SN34_EEPROM_BANK1 + SN34_EEPROM_BANK_SIZE;
+    if ((!first && !second) || (user_offset & (SN34_PAGE_SIZE - 1u)) || !data) return -1;
+    return sn34_flash_program_user_page(user_offset, data);
+}
 static int save_page(uint32_t offset,const void *data){
-    uint32_t irq=__get_PRIMASK();__disable_irq();
-    int result=sn34_flash_write_eeprom_page(offset,data);
-    __set_PRIMASK(irq);
+    int result;
+    ATOMIC_BLOCK_RESTORESTATE { result=sn34_flash_write_eeprom_page(offset,data); }
     return result || memcmp((const void *)offset,data,PAGE_SIZE)?-1:0;
 }
 // Background saves perform at most one physical page write per call. The

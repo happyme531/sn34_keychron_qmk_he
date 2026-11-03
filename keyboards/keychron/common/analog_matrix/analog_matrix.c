@@ -80,6 +80,30 @@ enum {
     AUTO_CALIB_FINISHED,
 };
 
+enum {
+    AMC_GET_VERSION = 0x01,
+
+    AMC_GET_PROFILES_INFO = 0x10,
+    AMC_SELECT_PROFILE,
+    AMC_GET_PROFILE_RAW,
+    AMC_SET_PROFILE_NAME,
+    AMC_SET_TRAVAL,
+    AMC_SET_ADVANCE_MODE,
+    AMC_SET_SOCD,
+    AMC_RESET_PROFILE = 0x1E,
+    AMC_SAVE_PROFILE  = 0x1F,
+    AMC_GET_CURVE     = 0x20,
+    AMC_SET_CURVE,
+    AMC_GET_GAME_CONTROLLER_MODE,
+    AMC_SET_GAME_CONTROLLER_MODE,
+
+    AMC_GET_REALTIME_TRAVEL = 0x30,
+
+    AMC_CALIBRATE = 0x40,
+    AMC_GET_CALIBRATE_STATE,
+    AMC_GET_CALIBRATED_VALUE,
+};
+
 extern const matrix_row_t analog_matrix_mask[];
 extern const matrix_row_t okmc_matrix[MATRIX_ROWS];
 extern matrix_row_t       virtual_matrix[MATRIX_ROWS];
@@ -734,10 +758,6 @@ bool analog_matrix_get_key_state(uint8_t row, uint8_t col) {
             return false;
     }
 }
-
-#ifdef ANALOG_MATRIX_FRAME_IMPL
-#include ANALOG_MATRIX_FRAME_IMPL
-#endif
 
 uint16_t pos2actuation(uint8_t row, uint8_t col, uint8_t point) {
     return 2000;

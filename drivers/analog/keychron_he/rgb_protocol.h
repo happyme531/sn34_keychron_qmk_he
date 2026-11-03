@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 #pragma once
+// Launcher effect IDs belong to the configurator adapter, not USB transport.
 #ifdef RGB_MATRIX_ENABLE
 #include "rgb_matrix.h"
 static const uint8_t sn34_rgb_wire_to_core[51] = {

@@ -14,6 +14,8 @@ def newest_bank(records):
 
 
 def read_banks(image, memory):
+    if memory['app_origin'] != 0:
+        raise ValueError('SN34F280 application must start at User-ROM offset zero')
     if len(image) != memory['app_size']:
         raise ValueError('Backup is not a complete application image')
     size = memory['eeprom_size']
@@ -23,15 +25,29 @@ def read_banks(image, memory):
         header = bytes(image[bank + size:bank + memory['eeprom_bank_size']])
         magic, version, sequence, stored_size, crc, commit, header_crc = HEADER.unpack_from(header)
         if ((magic, stored_size, commit) == (memory['eeprom_magic'], size, memory['eeprom_commit'])
-                and version in (1, 2, 3) and version <= memory['eeprom_version']
+                and (version == memory['eeprom_version'] or
+                     (version < 32 and memory['eeprom_legacy_versions'] & (1 << version)))
                 and zlib.crc32(payload) == crc
                 and zlib.crc32(header[:HEADER.size - 4]) == header_crc):
             records.append(dict(bank=bank, version=version, sequence=sequence, payload=payload, header=header))
     return records
 
 
+def migrated_payload(record, memory):
+    """Expected payload after a supported legacy HE layout is loaded."""
+    payload = record['payload']
+    if record['version'] == 2 and memory['eeprom_version'] >= 3:
+        if any(payload[-2:]):
+            raise ValueError('v2 macro buffer is full or unfinished; export/shorten its macros before migration')
+        start = memory['eeprom_base'] + 1
+        payload = payload[:start + 1] + payload[start:-1]
+    return payload
+
+
 def snapshot_image(payload, memory):
     """Wrap a live settings cache in a CRC-protected bank, with no firmware code."""
+    if memory['app_origin'] != 0:
+        raise ValueError('SN34F280 application must start at User-ROM offset zero')
     if len(payload) != memory['eeprom_size']:
         raise ValueError('Settings snapshot size does not match the target')
     header = HEADER.pack(memory['eeprom_magic'], memory['eeprom_version'], 1,

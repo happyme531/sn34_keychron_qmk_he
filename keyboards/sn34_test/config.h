@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 #pragma once
-#include "board/board_config.h"
+#include "board_config.h"
 #define SERIAL_NUMBER "SN34TEST"
 #define SN34_WIN_BASE_LAYER 0
 #define SN34_WIN_FN_LAYER 1
@@ -29,7 +29,7 @@
 #define RGB_MATRIX_DEFAULT_MODE RGB_MATRIX_SOLID_COLOR
 #define RGB_MATRIX_SLEEP
 #define RGB_MATRIX_KEYPRESSES
-#include "sn34_rgb_effects.h"
+#define RGB_MATRIX_FRAMEBUFFER_EFFECTS
 #endif
 #define PROF_TRIG_KEY_ROW 0
 #define PROF_TRIG_KEY_COL 2

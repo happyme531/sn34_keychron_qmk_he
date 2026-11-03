@@ -32,6 +32,9 @@
 #ifndef SN34_APP_ORIGIN
 #define SN34_APP_ORIGIN 0x0
 #endif
+#if SN34_APP_ORIGIN != 0
+#error "SN34F280 retained bootloader requires an application at User-ROM offset zero"
+#endif
 #ifndef SN34_APP_SIZE
 #define SN34_APP_SIZE 0x7e000
 #endif
@@ -64,6 +67,9 @@
 #endif
 #ifndef SN34_EEPROM_SIZE
 #define SN34_EEPROM_SIZE (SN34_EEPROM_BANK_SIZE - SN34_PAGE_SIZE)
+#endif
+#ifndef SN34_EEPROM_LEGACY_VERSIONS
+#define SN34_EEPROM_LEGACY_VERSIONS 0
 #endif
 #ifndef SN34_EEPROM_END
 #define SN34_EEPROM_END (SN34_EEPROM_BANK1 + SN34_EEPROM_BANK_SIZE)

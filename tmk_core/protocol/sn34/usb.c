@@ -17,7 +17,8 @@ typedef uint8_t USB_Descriptor_HIDReport_Datatype_t;
 #include <string.h>
 static USBD_Handle_t device __attribute__((aligned(4)));
 uint8_t native_keyboard_leds;
-static uint8_t last_boot[8] __attribute__((aligned(4))),last_shared[10][64] __attribute__((aligned(4))),shared_length[10];
+static uint8_t last_boot[sizeof(report_keyboard_t)] __attribute__((aligned(4)));
+static uint8_t last_shared[REPORT_ID_COUNT+1][64] __attribute__((aligned(4))),shared_length[REPORT_ID_COUNT+1];
 static uint8_t previous_state=255;
 static uint32_t enumeration_started,detached_at;
 static uint8_t enumeration_phase,enumerated_once;
@@ -29,7 +30,7 @@ static const uint8_t ota_report[] __attribute__((aligned(4)))={0x06,0x67,0xff,0x
 #endif
 static HAL_Status_T get_input(uint8_t idx,uint8_t id,uint8_t *data,uint16_t *length){
     if(idx==SN34_USB_BOOT && !id){memcpy(data,last_boot,8);*length=8;return HAL_OK;}
-    if(idx==SN34_USB_SHARED && id<10 && shared_length[id]){
+    if(idx==SN34_USB_SHARED && IS_VALID_REPORT_ID(id) && shared_length[id]){
         *length=shared_length[id];memcpy(data,last_shared[id],*length);return HAL_OK;
     }
     return HAL_ERROR;
@@ -43,8 +44,10 @@ static USBD_ReportInfo_t reports={.intf_num=SN34_HID_INTERFACES,.GetInputReport_
     .intf_param={
         {.subclass=1,.protocol=1,.bInEp=1,.InEpNum=1,.in_report_length=8,.out_report_length=1,
          .report_desc_length=sizeof(KeyboardReport),.report_desc=(uint8_t*)KeyboardReport,.hs_Interval=1},
+#ifdef SHARED_EP_ENABLE
         {.bInEp=1,.InEpNum=2,.in_report_length=64,.out_report_length=2,
          .report_desc_length=sizeof(SharedReport),.report_desc=(uint8_t*)SharedReport,.hs_Interval=1},
+#endif
 #if SN34_OTA_ENABLE
         {.feature_report_length=64,
          .report_desc_length=sizeof(ota_report),.report_desc=(uint8_t*)ota_report},
@@ -125,7 +128,7 @@ int sn34_usb_send(unsigned interface,const void *data,unsigned length){
 #endif
     if(interface>=SN34_HID_INTERFACES || length>64)return -1;
     if(USBD_HID_SendReport(interface,(uint8_t*)data,length)!=HAL_OK)return -1;
-    if(interface==SN34_USB_SHARED && length && *(const uint8_t*)data<10){
+    if(interface==SN34_USB_SHARED && length && IS_VALID_REPORT_ID(*(const uint8_t*)data)){
         unsigned id=*(const uint8_t*)data;memcpy(last_shared[id],data,length);shared_length[id]=length;
     }
     return 0;
@@ -137,8 +140,12 @@ int sn34_usb_receive(unsigned interface,void *data,unsigned size){
 void native_usb_task(void){
     if(enumeration_recovery())return;
     uint8_t leds[2];int length;
-    if(sn34_usb_receive(0,leds,1)==1)native_keyboard_leds=leds[0];
-    if((length=sn34_usb_receive(1,leds,2))>0)native_keyboard_leds=leds[length-1];
+    if(sn34_usb_receive(SN34_USB_BOOT,leds,1)==1)native_keyboard_leds=leds[0];
+#ifdef SHARED_EP_ENABLE
+    if((length=sn34_usb_receive(SN34_USB_SHARED,leds,2))>0)native_keyboard_leds=leds[length-1];
+#else
+    (void)length;
+#endif
     if(previous_state!=device.dev_state){
         bool was_suspended=previous_state==USBD_STATE_SUSPENDED || previous_state==USBD_STATE_SLEEP;
         previous_state=device.dev_state;

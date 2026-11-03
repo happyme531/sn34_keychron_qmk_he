@@ -15,6 +15,8 @@ from test_bat68 import Keyboard, BUILD, IMAGE, SYMS
 def main():
     assert 'sn34_test_user_events' in SYMS, 'Compile the minimal keymap and select its ELF'
     m=Keyboard()
+    assert m.call('sn34_test_atomic', 0) == 0x57
+    assert m.call('sn34_test_atomic', 1) == 0x7f
     counter=lambda name:int.from_bytes(m.u.mem_read(SYMS[name],4),"little")
     assert counter("sn34_test_matrix_inits")==1
     before=counter("sn34_test_matrix_scans");m.step()
@@ -35,7 +37,8 @@ def main():
     result={"status":"PASS_OFFLINE_NOT_FLASHED","image_sha256":hashlib.sha256(IMAGE).hexdigest(),
             "tests":["A separate minimal keymap retains Win Lock, OS switching and profile keycodes without default-keymap inclusion",
                      "Ordinary keys reach process_record_user; upstream matrix init and scan hooks run exactly once",
-                     "The minimal keymap's board settings restore from the same persistent format"]}
+                     "The minimal keymap's board settings restore from the same persistent format",
+                     "Real ARM atomic blocks restore nested/initial IRQ state, early returns and break; FORCEON enables IRQs"]}
     (BUILD/"board_hooks_test_results.json").write_text(json.dumps(result,indent=2)+"\n",encoding="utf-8")
     print(json.dumps(result,indent=2))
 

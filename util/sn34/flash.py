@@ -16,17 +16,7 @@ from backup import capture
 from device import Raw
 from firmware import Firmware, keyboard_definition
 from package import preserve_settings
-from settings import read_banks, newest_bank
-
-
-def migrated_payload(record, memory):
-    payload = record['payload']
-    if record['version'] == 2 and memory['eeprom_version'] >= 3:
-        if any(payload[-2:]):
-            raise ValueError('v2 macros need shortening before migration')
-        start = memory['eeprom_base'] + 1
-        payload = payload[:start + 1] + payload[start:-1]
-    return payload
+from settings import read_banks, newest_bank, migrated_payload
 
 
 def verify_settings(firmware, expected, timeout=15):

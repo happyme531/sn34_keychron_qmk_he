@@ -11,10 +11,16 @@ const uint16_t PROGMEM keymaps[4][MATRIX_ROWS][MATRIX_COLS] = {
     [3] = {[0][0] = KC_TRNS},
 };
 uint32_t sn34_test_user_events, sn34_test_matrix_scans, sn34_test_matrix_inits;
+uint32_t sn34_test_atomic_results[2];
+uint32_t sn34_test_atomic(uint32_t initially_disabled);
 bool process_record_user(uint16_t keycode, keyrecord_t *record) {
     (void)keycode; (void)record;
     sn34_test_user_events++;
     return true;
 }
-void matrix_init_user(void) { sn34_test_matrix_inits++; }
+void matrix_init_user(void) {
+    sn34_test_matrix_inits++;
+    sn34_test_atomic_results[0] = sn34_test_atomic(0);
+    sn34_test_atomic_results[1] = sn34_test_atomic(1);
+}
 void matrix_scan_user(void) { sn34_test_matrix_scans++; }

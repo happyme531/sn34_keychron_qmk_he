@@ -34,13 +34,17 @@ git submodule update --init --depth 1 lib/lufa
 
 Firmware compilation has no SN34 Python stage. Board configuration, scan ranks,
 calibration and response tables are maintained directly under each keyboard's
-`board/` directory. The ordinary C preprocessor expands the linker script from
+`board/` directory, with individual files inherited by keyboard variants.
+The ordinary C preprocessor expands the linker script from
 the same board constants used by C. Make applies the single SONiX HID fix to a
 build-local copy; the external SDK is never modified.
 Shared SN34F280 defaults are ordinary C headers, also listed as linker-script
 dependencies. The complete cached EEPROM backend uses `EEPROM_DRIVER = vendor`;
 its driver rules enable QMK initialization, and its configured `EEPROM_SIZE`
 supplies the capacity. No generic EEPROM source is added and then excluded.
+The HE core and matrix adapter alone use LTO so the hot loop can inline across
+their public API without injecting platform source into the shared HE core.
+Other QMK and SDK files keep their normal build settings.
 
 Features use ordinary QMK rules and command-line overrides:
 

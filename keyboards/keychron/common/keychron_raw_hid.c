@@ -74,11 +74,14 @@ void get_support_feature(uint8_t *data) {
 #    endif
         ;
 
-    data[2] = (
+    data[2] = (0
 #ifndef KEYCHRON_NO_QUICK_START
-        FEATURE_QUICK_START |
+        | FEATURE_QUICK_START
 #endif
-        FEATURE_NKRO) >> 8;
+#ifdef NKRO_ENABLE
+        | FEATURE_NKRO
+#endif
+        ) >> 8;
 }
 
 #    ifdef ANANLOG_MATRIX
@@ -140,12 +143,6 @@ void kc_raw_hid_send(uint8_t src, uint8_t *data, uint8_t len) {
     }
 #    endif
 }
-
-#ifdef ANANLOG_MATRIX
-__attribute__((weak)) void kc_analog_matrix_rx(uint8_t *data, uint8_t length) {
-    analog_matrix_rx(data, length);
-}
-#endif
 
 bool kc_raw_hid_rx(uint8_t src, uint8_t *data, uint8_t length) {
 #    if defined(ANANLOG_MATRIX) && defined(VIA_ENABLE)
@@ -275,7 +272,7 @@ bool kc_raw_hid_rx(uint8_t src, uint8_t *data, uint8_t length) {
 
 #    ifdef ANANLOG_MATRIX
         case 0xA9:
-            kc_analog_matrix_rx(data, length);
+            analog_matrix_rx(data, length);
             return true;
 #    endif
         case 0xAA:

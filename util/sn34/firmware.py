@@ -8,11 +8,62 @@ import re
 ROOT = Path(__file__).resolve().parents[2]
 
 
-def keyboard_definition(keyboard=None):
+def keyboard_directory(keyboard=None):
     keyboard = keyboard or os.environ.get('SN34_KEYBOARD', 'battle68')
     if not re.fullmatch(r'[a-z0-9_]+(?:/[a-z0-9_]+)*', keyboard):
         raise ValueError(f'Invalid keyboard name: {keyboard}')
-    return json.loads((ROOT / 'keyboards' / keyboard / 'keyboard.json').read_text(encoding='utf-8'))
+    return ROOT / 'keyboards' / keyboard
+
+
+def keyboard_file(relative, keyboard=None):
+    """Find the nearest board resource through QMK's keyboard hierarchy."""
+    directory = keyboard_directory(keyboard)
+    while directory != ROOT / 'keyboards':
+        path = directory / relative
+        if path.is_file():
+            return path
+        directory = directory.parent
+    raise FileNotFoundError(f'No inherited {relative} for {keyboard or directory}')
+
+
+def keyboard_definition(keyboard=None):
+    """Read maintained JSON metadata without requiring a QMK CLI on USB hosts.
+
+    Follow this checkout's find_info_json/deep_update order and per-key layout
+    merge. Config.h/rules.mk interpretation remains QMK's responsibility.
+    """
+    def merge(destination, source):
+        for key, value in source.items():
+            if isinstance(value, dict):
+                merge(destination.setdefault(key, {}), value)
+            else:
+                destination[key] = value
+
+    result = {'layouts': {}}
+    directory = keyboard_directory(keyboard)
+    while directory != ROOT / 'keyboards':
+        for name in ('info.json', 'keyboard.json'):
+            path = directory / name
+            if not path.is_file():
+                continue
+            data = json.loads(path.read_text(encoding='utf-8'))
+            if 'layout_aliases' in data:
+                result.setdefault('layout_aliases', {}).update(data.pop('layout_aliases'))
+            for name, layout in data.pop('layouts', {}).items():
+                name = result.get('layout_aliases', {}).get(name, name)
+                if name not in result['layouts']:
+                    result['layouts'][name] = layout
+                else:
+                    existing = result['layouts'][name]['layout']
+                    if len(existing) != len(layout['layout']):
+                        raise ValueError(f'Inherited {name} has a different number of keys')
+                    for old, new in zip(existing, layout['layout']):
+                        old.update(new)
+            merge(result, data)
+        directory = directory.parent
+    if not result.get('usb'):
+        raise ValueError('Keyboard metadata has no USB identity')
+    return result
 
 
 class Firmware:
@@ -24,7 +75,12 @@ class Firmware:
         self.addresses = {name: s.entry.st_value for name, s in self.symbols.items()}
         self.memory = {name[len('__sn34_'):].lower(): value for name, value in self.addresses.items()
                        if name.startswith('__sn34_')}
+        # Older ELFs used the shared backend's unconditional v1/v2 acceptance.
+        # New ELFs explicitly export each board's policy, including zero.
+        self.memory.setdefault('eeprom_legacy_versions', (1 << 1) | (1 << 2))
         self.base = self.memory['app_origin']
+        if self.base != 0:
+            raise ValueError('SN34F280 application must start at User-ROM offset zero')
         segments = [s for s in self.elf.iter_segments() if s['p_type'] == 'PT_LOAD' and s['p_filesz']]
         end = max(s['p_paddr'] + s['p_filesz'] for s in segments)
         if any(s['p_paddr'] < self.base for s in segments) or end >= self.memory['code_limit']:
@@ -62,7 +118,7 @@ class Firmware:
         if not self.features['rgb']:
             return result
         names = {int(wire): name for name, wire in re.findall(r'SN34_RGB_EFFECT\((\w+), (\d+)\)',
-                 (ROOT / 'tmk_core/protocol/sn34/rgb_protocol.inc').read_text(encoding='utf-8'))}
+                 (ROOT / 'drivers/analog/keychron_he/rgb_protocol.inc').read_text(encoding='utf-8'))}
         for wire, core in enumerate(self.read_symbol('sn34_rgb_wire_to_core')):
             if not wire or core == 255:
                 continue

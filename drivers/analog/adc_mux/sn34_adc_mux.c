@@ -2,6 +2,7 @@
 // Board wiring and phases, with the ADC initialized by SONiX HAL.
 #include "sn34f28x_hal.h"
 #include "sn34_adc_mux.h"
+#include "atomic_util.h"
 #include "wiring.h"
 
 static ADC_Handle_T adc;
@@ -15,14 +16,16 @@ static uint16_t *volatile published_raw=completed_raw;
 static const uint16_t *volatile leased_raw;
 static bool phase_sequences_active;
 bool native_scan_acquire(const uint16_t **raw,uint32_t *frame){
-    uint32_t saved=__get_PRIMASK();__disable_irq();
-    uint32_t current=native_scan_frames;
-    bool changed=current!=*frame;
-    if(changed){leased_raw=published_raw;*raw=published_raw;*frame=current;}
-    __set_PRIMASK(saved);return changed;
+    bool changed;
+    ATOMIC_BLOCK_RESTORESTATE {
+        uint32_t current=native_scan_frames;
+        changed=current!=*frame;
+        if(changed){leased_raw=published_raw;*raw=published_raw;*frame=current;}
+    }
+    return changed;
 }
 void native_scan_release(void){
-    uint32_t saved=__get_PRIMASK();__disable_irq();leased_raw=0;__set_PRIMASK(saved);
+    ATOMIC_BLOCK_RESTORESTATE { leased_raw=0; }
 }
 void HAL_ADC_MspInit(ADC_Handle_T *handle){
     (void)handle;__HAL_RCC_ADC0_CLK_ENABLE();__HAL_RCC_ADC0_RESET();

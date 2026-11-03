@@ -1,7 +1,7 @@
 # SPDX-License-Identifier: GPL-2.0-or-later
 XINPUT_ENABLE = yes
 SN34_OTA_ENABLE = yes
-SRC += indicators.c profiles.c
+SRC += indicators.c profiles.c compatibility.c
 # This pinned schema does not expose "none" as a named debounce option.
 # Select the existing upstream implementation explicitly; no board copy.
 DEBOUNCE_TYPE = custom

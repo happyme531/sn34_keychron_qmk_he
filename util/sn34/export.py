@@ -6,7 +6,7 @@ import argparse
 import json
 import os
 from pathlib import Path
-from firmware import Firmware, ROOT, keyboard_definition
+from firmware import Firmware, keyboard_definition, keyboard_file
 
 
 def definitions(firmware, keyboard=None):
@@ -43,7 +43,7 @@ def definitions(firmware, keyboard=None):
                menus=menus, keycodes=['qmk_lighting'] if menus else [], firmwareVersion=5)
     keys = [dict(row=key['matrix'][0], col=key['matrix'][1], x=key['x'], y=key['y'],
                  r=0, rx=0, ry=0, d=False, w=key.get('w',1), h=key.get('h',1), color='alpha') for key in layout]
-    labels_path = ROOT/'keyboards'/keyboard/'board/configurator.json'
+    labels_path = keyboard_file('board/configurator.json', keyboard)
     labels = json.loads(labels_path.read_text(encoding='utf-8'))['layers']
     if len(labels) != board['dynamic_keymap']['layer_count']:
         raise ValueError('Configurator labels must match the QMK layer count')

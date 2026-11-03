@@ -187,3 +187,43 @@ Final images and results are recorded in
 Builds use ordinary QMK commands; final verification selects the supported
 `SKIP_GIT=yes` option to skip slow version probes in this Windows/WSL checkout.
 No keyboard was flashed; physical behavior and timing were not retested.
+
+## Architecture review cleanup (2026-11-03)
+
+USB transport no longer depends on HE controller code, and report coalescing
+uses QMK report IDs/types instead of fixed lengths and offsets. The HE adapter
+owns controller recovery. The scan loop now calls the public HE API from its
+own source file; LTO is limited to that adapter and the HE core. The core no
+longer includes a platform frame implementation. Unused Raw HID indirection
+and public command enums were removed, and thin private headers/Flash source
+wrappers were consolidated. RGB animation selection uses QMK JSON metadata.
+
+Board resources and linker preprocessing follow the keyboard hierarchy,
+including transitive header dependencies. Host JSON metadata matches QMK for
+the inherited target. Battle68 owns its historical migration; other boards
+accept only explicitly declared legacy versions. The existing EEPROM v3 ABI,
+calibration/key tables, profile sizes, report descriptors and configurator
+exports are unchanged. Nonzero application origins are rejected explicitly.
+PRIMASK-backed atomic blocks replace the global no-op atomic setting.
+
+Default and minimal each pass 34 unit tests, plus eight default firmware suites
+and the minimal hook suite. Synthetic passes 27 unit tests with one
+production-only case skipped, followed by its firmware suite. The
+RGB/XInput/OTA-disabled target passes 34 unit tests and a typing/release,
+interface, Raw HID and export smoke check. Stock Q1 HE and K2 HE compile and
+link successfully. Temporary inherited targets verify parent wiring, child
+board configuration, nested linker dependencies and ordinary typing with
+NKRO/mouse keys/extra keys/joystick disabled. A separate six-axis, 16-button,
+hat-switch build verifies its 10-byte report, axis coalescing and ordered hat
+and button transitions. The minimal fixture executes nested atomic blocks,
+initially masked IRQs, early returns, breaks and FORCEON as real ARM code.
+
+The default BIN decreases from 89,984 to 89,856 bytes and BSS from 61,656 to
+61,600 bytes. Complete-loop instruction counts change from 6,421 to 6,485
+when idle (+1.0%); all-key press, movement and release counts decrease slightly.
+These are Unicorn instruction counts, not measured physical execution times.
+Independent v1 settings banks remain byte-exact through application/OEM
+packaging and independent flash preparation. No device was flashed.
+
+Exact image hashes, baselines and results are recorded in
+[review-cleanup-validation.json](review-cleanup-validation.json).
