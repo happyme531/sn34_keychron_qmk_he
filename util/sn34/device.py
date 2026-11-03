@@ -61,6 +61,20 @@ def coordinates(key):
     return matches[0]['matrix']
 
 
+def he_key_mask(key):
+    pins = keyboard_definition()['matrix_pins']
+    rows, cols = len(pins['rows']), len(pins['cols'])
+    if not 0 < rows <= 8 or not 0 < cols <= 24:
+        raise ValueError('Keychron HE requires at most 8 rows and 24 columns in a 32-byte packet')
+    mask = bytearray(rows * 3)
+    if key != 'all':
+        row, col = coordinates(key)
+        if not 0 <= row < rows or not 0 <= col < cols:
+            raise ValueError('Key coordinate is outside the keyboard matrix')
+        mask[row * 3:row * 3 + 3] = (1 << col).to_bytes(3, 'little')
+    return mask
+
+
 
 def numbers(value):
     values=[int(item,0) for item in value.split(",")]
@@ -113,6 +127,7 @@ def main():
         p.error("DKS requires ordered shallow/deep press and release thresholds in 0..40")
     if a.command=="set" and (a.keycode is None or not 0<=a.keycode<=65535):p.error("set requires --keycode 0..65535")
     if a.command=="select" and a.profile is None:p.error("select requires --profile")
+    mask=he_key_mask(a.key) if a.command=="he-set" else None
     if not a.worker:raise SystemExit(subprocess.run([sys.executable,"-u",__file__,*sys.argv[1:],"--worker"],timeout=30).returncode)
     raw=Raw()
     try:
@@ -126,8 +141,6 @@ def main():
         elif a.command=="select":raw.he(0x11,(profile,))
         elif a.command=="he-set":
             if a.mode not in ("regular","rapid"):p.error("he-set requires --mode regular or rapid")
-            mask=bytearray(18)
-            if a.key!="all":mask[r*3:r*3+3]=(1<<c).to_bytes(3,"little")
             raw.he(0x14,bytes((profile,1 if a.mode=="regular" else 2,a.actuation,a.sensitivity,a.release_sensitivity,a.key=="all"))+mask)
             raw.he(0x1f,(profile,))
         elif a.command in ("toggle","clear-advanced","gamepad","dks"):

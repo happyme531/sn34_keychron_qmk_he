@@ -13,7 +13,8 @@
   "eeprom_base": 37,
   "eeprom_magic": "0x45483842",
   "eeprom_commit": "0x4845434d",
-  "eeprom_version": 1,
+  "eeprom_version": 3,
+  "eeprom_legacy_versions": 6,
   "legacy_keymap_pages": [
     "0x7d000",
     "0x7d200"

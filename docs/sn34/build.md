@@ -58,6 +58,8 @@ Default outputs include `.build/battle68_default.elf` and
 `-e BUILD_DIR=/path/to/output` selects another build directory. There is no
 second import directory, build manifest, source-hash gate or configurator
 export in the compile path.
+Use a separate `BUILD_DIR` for each concurrently built SN34 target: the current
+external SDK paths otherwise resolve to shared object/dependency files.
 
 ## Optional tools
 
@@ -130,6 +132,14 @@ power-cycle or USB-host validation.
 The shared HE protocol tests call the common handler directly, checking profile
 response bounds, rejected writes and immediate active-profile threshold changes
 without relying on SN34's transport policy wrapper.
+Linker contract tests compile small probes against the production linker script,
+checking invalid bank, footer and RAM configurations. They run when
+`arm-none-eabi-gcc` is on PATH and are skipped on host-only systems. To run them
+separately in the ARM build environment:
+
+```sh
+uv run tests/sn34/test_compile_contracts.py
+```
 
 ## Optional Launcher helper
 

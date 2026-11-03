@@ -3,6 +3,7 @@ import struct
 import zlib
 
 HEADER = struct.Struct('<7I')
+BATTLE68_EEPROM_MAGIC = 0x45483842
 
 
 def newest_bank(records):
@@ -34,9 +35,12 @@ def read_banks(image, memory):
 
 
 def migrated_payload(record, memory):
-    """Expected payload after a supported legacy HE layout is loaded."""
+    """Expected payload after the board's supported legacy layout is loaded."""
     payload = record['payload']
-    if record['version'] == 2 and memory['eeprom_version'] >= 3:
+    # Only Battle68 v2 overlapped the profile byte with calibration. Version
+    # numbers on other keyboards describe their own ABI, not Battle68 history.
+    if (memory['eeprom_magic'] == BATTLE68_EEPROM_MAGIC and
+            record['version'] == 2 and memory['eeprom_version'] == 3):
         if any(payload[-2:]):
             raise ValueError('v2 macro buffer is full or unfinished; export/shorten its macros before migration')
         start = memory['eeprom_base'] + 1

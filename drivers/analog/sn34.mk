@@ -1,4 +1,11 @@
 # SPDX-License-Identifier: GPL-2.0-or-later
+# The HE adapter owns shared sources. Keep driver/feature declarations in
+# keyboard rules so QMK's metadata reader sees the actual build choices.
+# The pinned QMK schema has no named "none" option; use its existing none.c.
+LTO_ENABLE = no
+SRC += $(QUANTUM_DIR)/debounce/none.c drivers/analog/keychron_he/runtime.c
+include drivers/eeprom/sn34.mk
+
 ANALOG_MATRIX_I2C_SRC =
 ANALOG_MATRIX_EEPROM_SRC = drivers/analog/keychron_he/calibration.c
 ANALOG_MATRIX_SCAN_SRC = drivers/analog/adc_mux/sn34_adc_mux.c drivers/analog/keychron_he/matrix.c

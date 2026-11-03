@@ -32,7 +32,13 @@ rewrites tracked sources. External paths are Make variables or `.sn34-local.mk`.
 `keyboard.json` owns USB IDs/version, matrix dimensions, layout, LEDs and the
 ordinary QMK RGB animation selection.
 `config.h` owns keyboard behavior, profile hotkeys, report queue capacity and
-RGB defaults. Each keyboard's `profiles.c` owns its default HE profiles; the
+RGB defaults. The HE adapter supplies overridable actuation defaults;
+ordinary QMK defaults are used for tap timing and the maximum RGB brightness.
+`drivers/analog/sn34.mk` loads the shared scan, cached EEPROM, no-debounce and
+runtime sources. Driver selectors and joystick dimensions stay in board rules
+and config headers so QMK's metadata reader sees them without interpreting Make
+includes. Each keyboard's
+`profiles.c` owns its default HE profiles; the
 read-only profile tables remain in Flash. `board/board_config.h` owns scan sizes
 and the persistence ABI, with overridable chip defaults from
 `platforms/sn34/include/sn34_defaults.h`. The linker script reads the same
@@ -55,8 +61,13 @@ compiled mapping from the ELF.
 
 The platform starts clocks, watchdog and GPIO. QMK's EEPROM initialization
 loads the cache; HE matrix setup initializes fallback calibration and ADC.
-Board housekeeping runs profile hotkeys, indicators and idle storage saves.
-The board supplies the idle condition to the EEPROM driver. RGB indicators and
+Board housekeeping calls `sn34_he_task()` for profile hotkeys and idle storage
+saves, then runs board indicators. This is an ordinary shared function; board
+files retain the QMK `_kb` entry points and their product policies. Key and RGB
+hooks call the user first, respecting `false` before common HE processing.
+BOOM68 still pairs releases with consumed chord presses, even if a user vetoes
+the release. QMK invokes user housekeeping separately, once per iteration.
+The HE task supplies the idle condition to the EEPROM driver. RGB indicators and
 Raw HID configuration translation stay outside the peripheral/USB drivers.
 The protocol handles USB queues, connection state and deferred reset requests.
 It has no HE dependency. The HE adapter implements its reset callback for

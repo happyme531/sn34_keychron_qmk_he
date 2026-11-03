@@ -7,14 +7,18 @@ sys.path.insert(0,str(Path(__file__).resolve().parents[2]/"util/sn34"))
 import hashlib
 import json
 import re
+from dataclasses import replace
 from tempfile import TemporaryDirectory
 import unittest
 from target import ROOT
 from model import load_board, matrix_digest, keyboard_definition
-from storage import LEGACY_LAYOUT as LAYOUT, load_storage, read_banks, normalize_via_tag, STORAGE_FILE
+from storage import load_storage, read_banks, normalize_via_tag, STORAGE_FILE
 
 FIXTURES = ROOT / "tests/sn34/boards/battle68/fixtures"
 COMPAT = json.loads((FIXTURES / "sn34_v36_compatibility.json").read_text(encoding="utf-8"))
+# This frozen v36 assertion is Battle68-specific; generic fixtures describe
+# each target's current version and explicitly accepted legacy versions.
+LAYOUT = replace(load_storage(), eeprom_version=COMPAT['eeprom_version'], eeprom_legacy_versions=0)
 
 
 class CompatibilityContracts(unittest.TestCase):
@@ -68,11 +72,11 @@ class CompatibilityContracts(unittest.TestCase):
         self.assertEqual(hashlib.sha256(banks).hexdigest(), COMPAT["settings_fixture"]["bank_image_sha256"])
         image = bytearray(LAYOUT.app_size)
         image[LAYOUT.code_limit:LAYOUT.eeprom_end] = banks
-        valid = read_banks(image)
+        valid = read_banks(image, LAYOUT)
         self.assertEqual(len(valid), 1)
         self.assertEqual(valid[0]["sequence"], COMPAT["settings_fixture"]["sequence"])
         image[valid[0]["bank"] + 17] ^= 1
-        self.assertEqual(read_banks(image), [])
+        self.assertEqual(read_banks(image, LAYOUT), [])
 
     def test_invalid_storage_regions_are_rejected(self):
         for changes in ({"page_size": 0}, {"eeprom_banks": ["0x79000", "0x79000"]}, {"footer_address": "0x79000"}):

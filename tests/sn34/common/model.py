@@ -1,11 +1,8 @@
 """Join independent measured fixtures to QMK display metadata for offline tests."""
 import hashlib
 import json
-from target import ROOT, board_directory, keyboard_name
-
-def keyboard_definition(path=None):
-    path=path or ROOT/'keyboards'/keyboard_name()/'keyboard.json'
-    return json.loads(path.read_text(encoding='utf-8'))
+from target import board_directory
+from firmware import keyboard_definition
 
 def matrix_digest(keys):
     coordinates=sorted([[key['raw_slot'],*key['matrix']] for key in keys])

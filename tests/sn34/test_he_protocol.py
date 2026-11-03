@@ -6,6 +6,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent / 'common'))
 from keyboard import Keyboard, KEYS
 from emulator import SCRATCH, SYMS, FIRMWARE
+from model import load_board
 
 
 class SharedHeProtocol(unittest.TestCase):
@@ -74,7 +75,7 @@ class SharedHeProtocol(unittest.TestCase):
         key = KEYS[0]
         row, col = key['matrix']
         keyboard.call('dynamic_keymap_set_keycode', 0, row, col, 4)
-        mask = bytearray(18)
+        mask = bytearray(load_board()['matrix']['rows'] * 3)
         mask[row * 3:row * 3 + 3] = (1 << col).to_bytes(3, 'little')
         for travel in (12, 140):
             keyboard.travel_key(key, travel)

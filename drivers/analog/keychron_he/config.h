@@ -4,6 +4,13 @@
 #include "platform_deps.h"
 #endif
 #include "board_config.h"
+// Shared defaults; boards can override these before including this header.
+#ifndef DEFAULT_ACTUATION_POINT
+#define DEFAULT_ACTUATION_POINT 12
+#endif
+#ifndef DEFAULT_RAPID_TRIGGER_SENSITIVITY
+#define DEFAULT_RAPID_TRIGGER_SENSITIVITY 4
+#endif
 #define ANALOG_MATRIX_PLATFORM_HEADER "sn34_he.h"
 #define ANALOG_MATRIX_TRAVEL_CONVERT sn34_hall_convert
 #define ANALOG_MATRIX_FN_ACTIVE (SN34_PROFILE_HOTKEYS_ENABLE && (layer_state & SN34_FN_LAYER_MASK))

@@ -30,6 +30,10 @@
 #include "game_controller_common.h"
 #include "nvm_eeprom_eeconfig_internal.h"
 
+// AMC_SET_TRAVAL has an eight-byte header and a 24-bit mask per row.
+_Static_assert(MATRIX_ROWS > 0 && 8 + MATRIX_ROWS * 3 <= RAW_EPSIZE, "Keychron HE row masks exceed Raw HID packet size");
+_Static_assert(MATRIX_COLS > 0 && MATRIX_COLS <= 24, "Keychron HE supports at most 24 columns per row");
+
 #ifndef CAL_SAMPL_CNT
 #    define CAL_SAMPL_CNT 8
 #endif

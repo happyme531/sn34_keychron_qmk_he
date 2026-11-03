@@ -1,5 +1,5 @@
 """Independent persistent-format fixture reader for offline and backup tests."""
-from dataclasses import dataclass, replace
+from dataclasses import dataclass
 import json
 import struct
 import zlib
@@ -35,6 +35,7 @@ class StorageLayout:
     rgb_core_offset: int
     rgb_value_offset: int
     via_eeprom_date: str
+    eeprom_legacy_versions: int = 0
 
     @property
     def stack_top(self):
@@ -84,8 +85,7 @@ def load_storage(path=None):
     return layout
 
 
-LEGACY_LAYOUT = load_storage()
-LAYOUT = replace(LEGACY_LAYOUT, eeprom_version=max(3, LEGACY_LAYOUT.eeprom_version))
+LAYOUT = load_storage()
 
 
 def read_banks(image, layout=LAYOUT):
@@ -97,7 +97,8 @@ def read_banks(image, layout=LAYOUT):
         header = bytes(image[bank + layout.eeprom_size:bank + layout.eeprom_bank_size])
         magic, version, sequence, size, crc, commit, header_crc = HEADER.unpack_from(header)
         if ((magic, size, commit) == (layout.eeprom_magic, layout.eeprom_size, layout.eeprom_commit)
-                and version in (1, 2, 3, 4) and version <= layout.eeprom_version
+                and (version == layout.eeprom_version or
+                     (version < 32 and layout.eeprom_legacy_versions & (1 << version)))
                 and zlib.crc32(payload) == crc and zlib.crc32(header[:HEADER.size - 4]) == header_crc):
             records.append({"bank": bank, "sequence": sequence, "version": version, "payload": payload, "header": header})
     return records

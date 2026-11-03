@@ -71,5 +71,32 @@ class HostSelection(unittest.TestCase):
                 self.assertEqual(result['firmware'], 'v2.0.0')
         self.assertTrue(all(len(packet) == 32 for packet in self.device.requests))
 
+    def test_eighth_row_and_last_column_use_the_requested_he_mask(self):
+        board = dict(keyboard_name='Eight-row board', usb={'vid': '0xfeed', 'pid': '0x34'},
+                     dynamic_keymap={'layer_count': 2},
+                     matrix_pins={'rows': [None] * 8, 'cols': [None] * 24},
+                     layouts={'LAYOUT': {'layout': [{'label': 'Last', 'matrix': [7, 23]}]}})
+        args = ['device.py', 'he-set', '--key', 'Last', '--mode', 'rapid', '--worker']
+        with patch.object(device_commands, 'keyboard_definition', return_value=board), \
+                patch.object(sys, 'argv', args), contextlib.redirect_stdout(io.StringIO()):
+            device_commands.main()
+        packet = next(packet for packet in self.device.requests if packet[:2] == b'\xa9\x14')
+        self.assertEqual(packet[8:29], bytes(21))
+        self.assertEqual(packet[29:32], b'\x00\x00\x80')
+        with patch.object(device_commands, 'keyboard_definition', return_value=board):
+            self.assertEqual(device_commands.he_key_mask('all'), bytes(24))
+
+    def test_unsupported_he_geometry_is_rejected_before_opening_the_device(self):
+        for rows, cols in ((0, 5), (9, 5), (3, 0), (3, 25)):
+            with self.subTest(rows=rows, cols=cols):
+                board = dict(dynamic_keymap={'layer_count': 2},
+                             matrix_pins={'rows': [None] * rows, 'cols': [None] * cols})
+                args = ['device.py', 'he-set', '--key', 'all', '--mode', 'regular', '--worker']
+                with patch.object(device_commands, 'keyboard_definition', return_value=board), \
+                        patch.object(sys, 'argv', args), patch.object(device_commands, 'Raw') as raw:
+                    with self.assertRaisesRegex(ValueError, '8 rows and 24 columns'):
+                        device_commands.main()
+                raw.assert_not_called()
+
 
 if __name__ == '__main__': unittest.main()

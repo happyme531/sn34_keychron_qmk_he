@@ -1,27 +1,26 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 // Keyboard policy is linked independently of the selected keymap.
 #include "quantum.h"
-#include "sn34.h"
-#include "sn34_eeprom.h"
 #include "sn34_he.h"
 #include "profile.h"
 #include "analog_matrix.h"
 
 void sn34_indicators_task(void);
 void housekeeping_task_kb(void) {
-    if (sn34_host_ready()) process_profile_select_combo();
+    sn34_he_task();
     sn34_indicators_task();
-    sn34_eeprom_task(sn34_he_idle());
 }
 
 #ifdef RGB_MATRIX_ENABLE
 bool rgb_matrix_indicators_kb(void) {
+    if (!rgb_matrix_indicators_user()) return false;
     analog_matrix_indicator();
-    return rgb_matrix_indicators_user();
+    return true;
 }
 #endif
 
 bool process_record_kb(uint16_t keycode, keyrecord_t *record) {
+    if (!process_record_user(keycode, record)) return false;
     if (!process_record_profile(keycode, record)) return false;
     if (keycode == QK_KB_30) {
         if (record->event.pressed) {
@@ -39,5 +38,5 @@ bool process_record_kb(uint16_t keycode, keyrecord_t *record) {
         }
         return false;
     }
-    return process_record_user(keycode, record);
+    return true;
 }

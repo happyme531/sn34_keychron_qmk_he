@@ -3,15 +3,18 @@ import json
 from pathlib import Path
 import sys
 from tempfile import TemporaryDirectory
+from dataclasses import replace
 import unittest
 from unittest.mock import patch
 
 sys.path[:0] = [str(Path(__file__).resolve().parent / 'common'),
                str(Path(__file__).resolve().parents[2] / 'util/sn34')]
 import firmware
+import model
+import storage
 from emulator import FIRMWARE
 from keyboard import Keyboard
-from settings import read_banks, snapshot_image
+from settings import BATTLE68_EEPROM_MAGIC, migrated_payload, read_banks, snapshot_image
 
 
 class PlatformContracts(unittest.TestCase):
@@ -32,17 +35,66 @@ class PlatformContracts(unittest.TestCase):
             resource = parent / 'board/configurator.json'
             resource.write_text('{"layers": ["Base"]}')
             (parent / 'info.json').write_text(json.dumps({
+                'keyboard_name': 'Inherited board',
                 'usb': {'vid': '0x1234'},
+                'matrix_pins': {'rows': [None], 'cols': [None]},
+                'rgb_matrix': {'layout': [{'matrix': [0, 0], 'x': 0, 'y': 0, 'flags': 4}]},
                 'layouts': {'LAYOUT': {'layout': [{'matrix': [0, 0], 'x': 0, 'y': 0}]}}}))
             (child / 'keyboard.json').write_text(json.dumps({
                 'usb': {'pid': '0x5678'},
                 'layouts': {'LAYOUT': {'layout': [{'label': 'A'}]}}}))
-            with patch.object(firmware, 'ROOT', root):
+            fixture = root / 'measured-board.json'
+            fixture.write_text(json.dumps({'matrix': {}, 'keys': [{'matrix': [0, 0], 'raw_slot': 0}]}))
+            with patch.object(firmware, 'ROOT', root), patch.dict('os.environ', SN34_KEYBOARD='example/ansi'):
                 board = firmware.keyboard_definition('example/ansi')
                 self.assertEqual(board['usb'], {'vid': '0x1234', 'pid': '0x5678'})
                 self.assertEqual(board['layouts']['LAYOUT']['layout'][0],
                                  {'label': 'A', 'matrix': [0, 0], 'x': 0, 'y': 0})
                 self.assertEqual(firmware.keyboard_file('board/configurator.json', 'example/ansi'), resource)
+                measured = model.load_board(fixture)
+                self.assertEqual(measured['matrix'], {'rows': 1, 'cols': 1})
+                self.assertEqual(measured['keys'][0]['name'], 'A')
+                self.assertEqual(measured['keys'][0]['led'], 0)
+                self.assertEqual(measured['usb'], board['usb'])
+
+    def test_new_board_versions_are_not_battle68_history(self):
+        with TemporaryDirectory(dir=firmware.ROOT / '.build') as temporary:
+            path = Path(temporary) / 'storage.json'
+            fixture = json.loads(storage.STORAGE_FILE.read_text())
+            fixture.update(eeprom_magic='0x12345678', eeprom_version=1)
+            fixture.pop('eeprom_legacy_versions', None)
+            path.write_text(json.dumps(fixture))
+            layout = storage.load_storage(path)
+        self.assertEqual(layout.eeprom_version, 1)
+        self.assertEqual(layout.eeprom_legacy_versions, 0)
+        memory = dict(FIRMWARE.memory, eeprom_magic=layout.eeprom_magic,
+                      eeprom_version=1, eeprom_legacy_versions=0)
+        payload = bytes([0xa5]) + bytes(memory['eeprom_size'] - 1)
+        for version in (1, 2, 3, 5, 31):
+            with self.subTest(version=version):
+                image = snapshot_image(payload, dict(memory, eeprom_version=version))
+                self.assertEqual(bool(storage.read_banks(image, layout)), version == 1)
+                self.assertEqual(bool(read_banks(image, memory)), version == 1)
+        # Future boards can declare their own current and legacy version numbers.
+        layout = replace(layout, eeprom_version=6, eeprom_legacy_versions=1 << 5)
+        memory.update(eeprom_version=6, eeprom_legacy_versions=1 << 5)
+        for version in (1, 2, 5, 6):
+            image = snapshot_image(payload, dict(memory, eeprom_version=version))
+            self.assertEqual(bool(storage.read_banks(image, layout)), version in (5, 6))
+            self.assertEqual(bool(read_banks(image, memory)), version in (5, 6))
+
+    def test_only_battle68_v2_to_v3_moves_the_calibration_payload(self):
+        payload = bytes(range(100)) + bytes(FIRMWARE.memory['eeprom_size'] - 100)
+        record = dict(version=2, payload=payload)
+        memory = dict(FIRMWARE.memory, eeprom_magic=BATTLE68_EEPROM_MAGIC, eeprom_version=3)
+        start = memory['eeprom_base'] + 1
+        self.assertEqual(migrated_payload(record, memory), payload[:start + 1] + payload[start:-1])
+        for changes in ({'eeprom_magic': 0x12345678}, {'eeprom_version': 4}):
+            self.assertEqual(migrated_payload(record, dict(memory, **changes)), payload)
+        # A non-Battle68 v2 payload may legitimately use its final macro bytes.
+        payload = payload[:-2] + b'xy'
+        self.assertEqual(migrated_payload(dict(version=2, payload=payload),
+                                         dict(memory, eeprom_magic=0x12345678)), payload)
 
     def test_nonzero_user_rom_origin_is_rejected(self):
         memory = dict(FIRMWARE.memory, app_origin=0x1000)

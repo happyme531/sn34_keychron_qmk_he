@@ -1,8 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 #include "quantum.h"
 #include "sn34f28x_hal.h"
-#include "sn34.h"
-#include "sn34_eeprom.h"
 #include "sn34_he.h"
 #include "profile.h"
 #include "analog_matrix.h"
@@ -22,23 +20,32 @@ void sn34_matrix_scan_extra(matrix_row_t current_matrix[]) {
 }
 
 void housekeeping_task_kb(void) {
-    if (sn34_host_ready()) process_profile_select_combo();
-    sn34_eeprom_task(sn34_he_idle());
+    sn34_he_task();
 }
 
 bool process_record_kb(uint16_t keycode, keyrecord_t *record) {
-    if (!process_record_profile(keycode, record)) return false;
 #if SN34_PROFILE_HOTKEYS_ENABLE
     static matrix_row_t consumed[MATRIX_ROWS];
     extern matrix_row_t virtual_matrix[MATRIX_ROWS];
     uint8_t row = record->event.key.row, col = record->event.key.col;
+    bool consumed_release = false;
     if (row < MATRIX_ROWS && col < MATRIX_COLS) {
         matrix_row_t bit = (matrix_row_t)1u << col;
-        // Consume the release too, including when Fn or P is released first.
+        // Clear our press/release bookkeeping even if the user vetoes release.
         if (!record->event.pressed && (consumed[row] & bit)) {
             consumed[row] &= ~bit;
-            return false;
+            consumed_release = true;
         }
+    }
+#endif
+    bool allowed = process_record_user(keycode, record);
+#if SN34_PROFILE_HOTKEYS_ENABLE
+    if (consumed_release) return false;
+#endif
+    if (!allowed || !process_record_profile(keycode, record)) return false;
+#if SN34_PROFILE_HOTKEYS_ENABLE
+    if (row < MATRIX_ROWS && col < MATRIX_COLS) {
+        matrix_row_t bit = (matrix_row_t)1u << col;
         bool profile_key = (row == PROF_TRIG_KEY_ROW && col == PROF_TRIG_KEY_COL) ||
                            (row == PROF_1_KEY_ROW && col == PROF_1_KEY_COL) ||
                            (row == PROF_2_KEY_ROW && col == PROF_2_KEY_COL) ||
@@ -52,12 +59,13 @@ bool process_record_kb(uint16_t keycode, keyrecord_t *record) {
         }
     }
 #endif
-    return process_record_user(keycode, record);
+    return true;
 }
 
 #ifdef RGB_MATRIX_ENABLE
 bool rgb_matrix_indicators_kb(void) {
+    if (!rgb_matrix_indicators_user()) return false;
     analog_matrix_indicator();
-    return rgb_matrix_indicators_user();
+    return true;
 }
 #endif
