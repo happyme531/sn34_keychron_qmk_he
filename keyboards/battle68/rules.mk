@@ -1,7 +1,7 @@
 # SPDX-License-Identifier: GPL-2.0-or-later
 XINPUT_ENABLE = yes
 SN34_OTA_ENABLE = yes
-SRC += indicators.c profiles.c compatibility.c
+SRC += indicators.c profiles.c
 DEBOUNCE_TYPE = custom
 EEPROM_DRIVER = vendor
 RGB_MATRIX_ENABLE = yes

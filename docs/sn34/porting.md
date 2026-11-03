@@ -31,7 +31,8 @@ Maintain these sources directly:
   endpoints. This table is defined once in the matrix adapter translation unit.
 - `board/hall_curve.inc`: normalized magnetic response data with measurement
   provenance. This is a maintained constant table, not a build-time export.
-- `board/configurator.json`: optional configurator layer labels.
+- `board/configurator.json`: layer labels and optional encoder metadata,
+  required by the configurator export tool; not needed for compilation.
 - `board/updater.json`: optional production updater-template hash/resource
   contract. Do not copy another keyboard's updater identity.
 - `keymaps/`: ordinary QMK keymaps.
@@ -50,8 +51,9 @@ Run `qmk compile -kb <keyboard> -km default`. No prepare or import command is
 needed. Select RGB, XInput and application OTA through the existing Make flags.
 The current scanner uses ADC0; the WS2812 driver uses SPI1 and DMA1 channel 0.
 Another peripheral topology requires a suitable driver implementation.
-The Launcher adapter requires VIA, which enables Raw HID automatically; NKRO, mouse keys, extra keys and
-joystick remain optional. The hot HE scan and shared core use LTO in just those
+The Launcher adapter requires VIA, which enables Raw HID automatically.
+NKRO, mouse keys, extra keys and joystick remain optional.
+The hot HE scan and shared core use LTO in just those
 two translation units, without enabling LTO across the SDK or all of QMK.
 
 The QMK `custom` bootloader implements the retained footer-validity boot scheme;
@@ -78,17 +80,16 @@ BOOM68 demonstrates active-low bank enables, an encoder button and extra RGB
 pixels: see [its board documentation](../../keyboards/langtu/boom68/wired/readme.md).
 QMK invokes `housekeeping_task_user` separately. The current calibration adapter
 uses the fallback endpoints maintained in `board/keys.inc`.
-New boards accept their current EEPROM version only. Declare any supported
-old versions in `SN34_EEPROM_LEGACY_VERSIONS` (bit N accepts version N), and
-implement `sn34_eeprom_migrate()` if their payload needs conversion before
-QMK/HE initialization. Versions are local to each board's EEPROM magic; a new
-board can start at v1, as the synthetic `sn34_test` target does. Battle68's
-historical v1/v2 handling is board-specific in both firmware and host tools.
+Each board accepts only its current EEPROM version. Choose a unique magic and
+define `SN34_EEPROM_VERSION`; a new board may start at v1. Invalid versions
+initialize defaults in firmware and are rejected by host packaging. There are
+no migration callbacks or legacy-version declarations. Change the version
+when the stored layout changes and document that reconfiguration is required.
 
 Add independent measured/reference data and a test plan under
 `tests/sn34/boards/<keyboard>/fixtures/`. These fixtures never feed the compiler.
 `storage.json` declares the current `eeprom_version` independently of the build
-headers; its optional `eeprom_legacy_versions` bitmap defaults to zero.
+headers; host and firmware tests reject every other version.
 Run `uv run tests/sn34/run.py --keyboard <keyboard>` after compilation.
 Layouts may use normal QMK names such as `LAYOUT_ansi_68`. If more than one
 layout is defined, select one with `--layout <name>` in host tools and tests.

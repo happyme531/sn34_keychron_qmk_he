@@ -1,139 +1,109 @@
-# SN34 QMK platform
+# SN34 architecture
 
-This fork is based on Keychron QMK `2025q3`, commit
-`2b493ff95f2665db719b1e95c91babb5036e72f3`.
+The Keychron QMK baseline is commit
+`2b493ff95f2665db719b1e95c91babb5036e72f3`, recorded in
+[`upstream.json`](../../platforms/sn34/upstream.json).
 
 | Location | Responsibility |
 | --- | --- |
-| `platforms/sn34/sn34f28x` | Reset, clocks, timebase, watchdog, runtime, Flash and linker script |
-| `tmk_core/protocol/sn34` | SONiX USB transport, QMK host reports and lifecycle adapters |
-| `drivers/analog/adc_mux` | ADC/MUX sampling and complete-frame buffer ownership |
-| `drivers/analog/keychron_he` | Sample mapping, travel conversion, calibration and Keychron integration |
-| `drivers/eeprom/sn34*` | Cached EEPROM and CRC-protected two-bank commits |
+| `platforms/sn34/sn34f28x` | Startup, clocks, watchdog, timebase, libc hooks, Flash and linker script |
+| `tmk_core/protocol/sn34` | SONiX USB classes, host report queues and QMK protocol lifecycle |
+| `drivers/analog/adc_mux` | ADC/MUX scanning and complete-frame buffer ownership |
+| `drivers/analog/keychron_he` | Sample-to-matrix mapping, travel conversion, fallback calibration and HE configuration adapter |
+| `drivers/eeprom/sn34*` | EEPROM cache and CRC-protected two-bank commits |
 | `drivers/led/ws2812_sn34.c` | SPI/DMA WS2812 output |
-| `keyboards/<keyboard>` | QMK metadata, feature rules, board wiring, policy and keymaps |
-| `util/sn34` | Packaging, independent flashing, Raw HID configuration and configurator export |
-| `tests/sn34` | Offline ARM emulation and independent compatibility fixtures |
-
-QMK's `quantum/main.c` owns the lifecycle. Keychron HE algorithms remain in
-`keyboards/keychron/common/analog_matrix`; both stock keyboards and SN34 use
-its existing Make source list, with SN34-specific scan/calibration adapters.
-The ARM toolchain supplies newlib-nano. Its allocator grows through a bounded
-`_sbrk` between BSS and the reserved stack region; there is no private libc or
-statically reserved 32 KiB allocation arena.
+| `keyboards/<keyboard>` | Metadata, features, wiring, default profiles, keymaps and product policy |
+| `util/sn34` | Configuration, export, packaging, settings snapshots and flashing |
+| `tests/sn34` | ARM emulation and independent board/reference fixtures |
 
 ## Build ownership
 
-`qmk compile` owns the entire firmware build. The SN34 platform adds the chip
-sources, external SDK paths, one Make rule for the build-local SDK fix, and C
-preprocessing of the linker script. It runs no custom Python code and never
-rewrites tracked sources. External paths are Make variables or `.sn34-local.mk`.
+`qmk compile` owns the build. The platform adds startup/SDK sources, applies
+the HID SDK patch to a build-local copy and preprocesses the linker script.
+External SDK paths are normalized before QMK derives target-local object paths,
+so different targets can build concurrently in the same output directory.
 
-`keyboard.json` owns USB IDs/version, matrix dimensions, layout, LEDs and the
-ordinary QMK RGB animation selection.
-`config.h` owns keyboard behavior, profile hotkeys, report queue overrides and
-RGB defaults. The HE adapter supplies overridable actuation defaults;
-ordinary QMK defaults are used for tap timing and the maximum RGB brightness.
-`drivers/analog/sn34.mk` loads the shared scan, cached EEPROM, no-debounce and
-runtime sources. Driver selectors and joystick dimensions stay in board rules
-and config headers so QMK's metadata reader sees them without interpreting Make
-includes. Each keyboard's
-`profiles.c` owns its default HE profiles; the
-read-only profile tables remain in Flash. `board/board_config.h` owns scan sizes
-and the persistence ABI, with overridable chip defaults from
-`platforms/sn34/include/sn34_defaults.h`. The linker script reads the same
-headers. Board include directories follow QMK's keyboard hierarchy, searching
-the most specific directory first. Variants can inherit individual board files;
-the linker preprocessor records their transitive header dependencies.
-`board/wiring.h` contains inline
-peripheral operations and ADC rank/scatter tables. `board/keys.inc` supplies
-the one shared sample-to-matrix/calibration table; `hall_curve.inc` supplies
-the measured response curve. These are ordinary maintained source files.
+`keyboard.json` defines identity, matrix dimensions, layouts, LEDs and RGB
+animations. `config.h` defines board behavior and optional overrides.
+`rules.mk` selects features and drivers; VIA enables Raw HID automatically.
+`post_rules.mk` applies Bootmagic policy after QMK feature selection and loads
+the optional RGB driver. `profiles.c` contains read-only default HE profiles.
 
-Common HID report definitions live in `tmk_core/protocol/usb_hid_reports.h` and
-are included by both the existing USB descriptor implementation and SONiX.
-No script extracts fragments from C source. Launcher wire IDs are mapped to
-the actual QMK C enum through `drivers/analog/keychron_he/rgb_protocol.inc`;
-optional export reads the
-compiled mapping from the ELF.
+`board/board_config.h` defines scan sizes and the storage contract, using
+shared chip defaults from `platforms/sn34/include/sn34_defaults.h`.
+The linker reads the same headers and records transitive dependencies.
+Individual board files can be inherited through QMK's keyboard hierarchy;
+the most specific board include directory is searched first.
 
-## Runtime and persistence
+`board/wiring.h` supplies inline peripheral operations and ADC rank/scatter
+tables. `keys.inc` defines the shared sample-to-matrix/calibration table, and
+`hall_curve.inc` defines the board's response curve. These are maintained
+sources; provenance and measurement limits belong in the board documentation.
 
-The platform starts clocks, watchdog and GPIO. QMK's EEPROM initialization
-loads the cache; HE matrix setup initializes fallback calibration and ADC.
-Board housekeeping calls `sn34_he_task()` for profile hotkeys and idle storage
-saves, then runs board indicators. This is an ordinary shared function; board
-files retain the QMK `_kb` entry points and their product policies. Key and RGB
-hooks call the user first, respecting `false` before common HE processing.
-BOOM68 still pairs releases with consumed chord presses, even if a user vetoes
-the release. QMK invokes user housekeeping separately, once per iteration.
-The HE task supplies the idle condition to the EEPROM driver. RGB indicators and
-Raw HID configuration translation stay outside the peripheral/USB drivers.
-The protocol handles USB queues, connection state and deferred reset requests.
-It has no HE dependency. The HE adapter implements its reset callback for
-controller state recovery; queue report IDs and field bounds come from QMK
-types. Optional mouse, extra-key, NKRO and joystick reports use normal QMK
-feature selection. VIA/Raw HID remain requirements of the Launcher adapter.
-Queue slots hold the actual maximum 32-byte report, with compile-time checks
-for every supported report type; the endpoint's larger packet limit does not
-inflate every queue entry. The EEPROM driver supplies the complete vendor API,
-including initialization and capacity, without filtering QMK's source list.
+Keychron's HE source list remains shared with the stock boards. Its hardware
+source selectors choose SN34 scan, calibration and USB adapters. Only the
+matrix adapter and common HE core use LTO, retaining hot-loop inlining through
+the public API. newlib-nano supplies libc with a bounded heap below the stack.
 
-Shared HE command handling owns packet bounds, parameter validation and live
-profile updates. The SN34 Raw HID adapter owns the NKRO switch policy, RGB wire-ID
-translation and a bounded read-only settings snapshot command. HE configuration
-uses the ordinary Keychron handler without an SN34 input-activity gate. Matrix hooks,
-frame consumption and travel conversion live
-in one adapter translation unit. The scan loop calls the public HE API;
-only the adapter and HE core use LTO to retain inlining across that boundary.
-No platform implementation file is included into Keychron's core.
-Calibration uses the board's maintained fallback endpoints. Platform atomic
-blocks preserve PRIMASK, including nested scopes, early returns and breaks;
-ADC buffer leasing, the timebase and bank commits use that same interface.
+## Runtime
 
-Battle68 preserves its v36 matrix coordinates, physical Fn at `(0,0)`, EEPROM
-banks and VIA compatibility date. The shared HE header defaults to the original
-stock layout; SN34 overrides only the calibration start to reserve a separate
-profile byte. v3 restores v1's non-overlapping payload layout. v1 banks need only
-a header-version update; v2 banks shift calibration and subsequent VIA data
-right in RAM before QMK initialization. This migration belongs to
-`keyboards/battle68/compatibility.c`; new boards accept only their current
-version unless they explicitly declare a legacy-version bitmap and supply
-any required migration. Packaging reads the same bitmap from the ELF.
-Background commits leave the previous
-bank intact until the new header is complete. Independent v1 and v2 fixtures
-check these boundaries and all physical calibration endpoints. `sn34_test` exercises a different
-3x5 matrix, 16 sampled slots, two phases, 12 switches, five LEDs and different
-EEPROM banks. It is a synthetic test target, not a physical hardware port.
+QMK's `quantum/main.c` owns the lifecycle. Platform setup starts clocks,
+watchdog and GPIO; EEPROM initialization loads the current-format cache;
+matrix setup prepares fallback calibration and starts ADC scanning.
+The scanner publishes complete frames with buffer leasing, using PRIMASK-backed
+atomic blocks to protect ownership transitions.
 
-## Optional host tools
+Board housekeeping calls `sn34_he_task()` for profile hotkeys and idle saves,
+then performs board-specific indication work. Key/RGB hooks respect user-hook
+return values. Mixed Hall/digital boards can implement `sn34_matrix_scan_extra()`
+for debounced digital inputs even when no new ADC frame is available.
 
-`device.py`, `export.py`, `package.py`, `backup.py` and `flash.py` are command
-entry points. `firmware.py` reads a standard ELF for these tools and offline tests.
-Its JSON metadata reader follows this checkout's QMK inheritance and per-key
-layout merging; board resources also fall back through parent directories.
-This keeps native Windows USB tools independent of a QMK CLI installation.
-Config.h/rules.mk interpretation remains in QMK. The retained SN34F280
-bootloader supports User-ROM application offset zero; other origins are
-rejected at build time and by host tools instead of partially supported.
-The old generator, build wrapper, object import and source-manifest framework
-have been removed. Packaging is an explicit operation; it can preserve a
-compatible settings backup and optionally wrap an external OEM updater.
-The ordinary QMK `flash` target runs backup, packaging, SonixFlasherC and
-post-reboot configuration verification. The firmware snapshot reads only the
-logical EEPROM cache and checks its revision on each packet; it never exposes
-arbitrary Flash reads or writes. See [flashing details](flashing.md).
+The USB transport owns queues, connection state and deferred reset requests.
+The HE adapter supplies controller recovery. Queues default to 256 slots with
+96 reserved for input bursts; a board may override these values. Report slots
+are 32 bytes, with compile-time checks against supported QMK report types.
+USB power and explicit HID polling settings follow normal QMK configuration;
+see [build.md](build.md) for the supported intervals and defaults.
 
-See [build instructions](build.md), [porting notes](porting.md) and
-[validation history](validation.md). Historical records describe the workflow
-at their recorded revision; current commands are documented in `build.md`.
+Common HID report definitions are shared in
+`tmk_core/protocol/usb_hid_reports.h`. Launcher RGB wire IDs are translated by
+the HE adapter; optional export reads the compiled mapping from the ELF.
 
-## Following upstream
+## Persistence
 
-Keep the public HE conversion hook, the four hardware source selections and
-the optional calibration offset as the port's small integration surface.
-Protocol bounds checks, calibration/joystick fixes, constant default profiles,
-portable Raw HID sending and VIA RGB persistence fixes are general corrections
-and should be carried separately from board wiring and platform support when
-rebasing. The common HID report extraction removes a duplicate descriptor
-implementation and remains shared by the stock and SONiX backends.
+The EEPROM cache holds QMK, HE and VIA settings. Background saves start after
+five seconds without actuated input and write at most one Flash page per step.
+The previous committed bank stays valid until the new bank's CRC-protected
+header is complete. The linker rejects overlapping banks and invalid code,
+footer, heap and stack bounds.
+
+Each board accepts only its current EEPROM magic, version and size. Invalid
+or incompatible banks initialize defaults. No legacy-format acceptance bitmap,
+payload conversion or board migration callback is present. Current-format
+settings snapshots and committed banks are preserved without conversion.
+Changing the persistent layout requires a version change and reconfiguration;
+the firmware and host tools enforce the same version contract.
+
+SN34 reserves a distinct selected-profile byte before calibration, through the
+common HE calibration-offset hook. The stock Keychron default layout remains
+unchanged. The VIA compatibility date is stable across rebuilds so a changed
+build timestamp does not reset current-format keymaps or macros.
+
+## Host tools and upstream integration
+
+Host tools read the ordinary ELF and maintained JSON metadata. Their JSON
+reader follows this checkout's inheritance/layout merging while keeping
+Windows USB tools independent of a QMK CLI installation. A shared selector
+accepts arbitrary layout names/aliases; multiple layouts require `--layout`
+or `SN34_LAYOUT`. Config/rules interpretation stays in QMK.
+
+Packaging checks ELF bounds and copies matching settings banks intact. The
+retained bootloader requires User-ROM application offset zero and a valid
+footer. `qmk flash` delegates to the host backup/package/flash workflow;
+see [flashing.md](flashing.md) for installation and recovery.
+
+Keep platform/board changes separate from general HE, calibration, joystick,
+Raw HID and VIA corrections when following upstream. The common conversion
+hook, hardware source selectors, Fn-layer condition and calibration offset
+are the main HE integration points. See [porting.md](porting.md) for a new board
+and [validation.md](validation.md) for test scope and dated hardware evidence.

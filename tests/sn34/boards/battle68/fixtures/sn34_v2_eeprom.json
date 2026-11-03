@@ -1,8 +1,0 @@
-{
-  "description": "Controlled v2 EEPROM produced by the previous firmware, not synthesized by the v3 migrator.",
-  "source_commit": "b5ac7f002b627d8425ee7d11616d92e35ebcf250",
-  "procedure": "Load sn34_v36_eeprom.bin in the b5ac7f0 ARM emulator, complete sn34_eeprom_save_step commits, then capture both 8192-byte banks at 0x79000.",
-  "file": "sn34_v2_eeprom.bin",
-  "bytes": 16384,
-  "sha256": "672867085ad47843dd707792dbd9ba1f0f9d3f248cd5b08861c27ce8cf9c5279"
-}

@@ -11,65 +11,12 @@ import hashlib
 import json
 import struct
 from test_bat68 import Keyboard,BUILD,IMAGE,NAMES,KEYS,SCRATCH,SYMS
-from target import ROOT
-from storage import LAYOUT, read_banks
+from storage import LAYOUT
 
 
 def main():
     tests=[];m=Keyboard();r,c=NAMES["A"]["matrix"]
-    fixture=ROOT/"tests/sn34/boards/battle68/fixtures"
-    compatibility=json.loads((fixture/"sn34_v36_compatibility.json").read_text(encoding="utf-8"))
-    old=Keyboard((fixture/"sn34_v36_eeprom.bin").read_bytes())
-    backup=bytearray(LAYOUT.app_size)
-    backup[LAYOUT.code_limit:LAYOUT.eeprom_end]=(fixture/'sn34_v36_eeprom.bin').read_bytes()
-    previous=read_banks(backup)[0]['payload']
-    converted=previous
-    assert bytes(old.u.mem_read(SYMS['cache'],LAYOUT.eeprom_size))==converted
-    expected=compatibility["settings_fixture"]
-    assert old.call("dynamic_keymap_get_keycode",0,r,c)==expected["A_keycode"]
-    old.call("dynamic_keymap_macro_get_buffer",0,len(expected["macro_0"])+1,SCRATCH)
-    assert bytes(old.u.mem_read(SCRATCH,len(expected["macro_0"])+1))==expected["macro_0"].encode()+b"\0"
-    assert old.raw_command(bytes((0xa9,0x10)))[2]==expected["profile"]
-    assert (old.call("rgb_matrix_get_hue"),old.call("rgb_matrix_get_sat"))==(expected["rgb_hue"],expected["rgb_saturation"])
-    assert old.saved_sequence()==expected["sequence"]
-    old.call('sn34_eeprom_save_step')
-    interrupted=Keyboard(bytes(old.u.mem_read(0x79000,0x5000)))
-    assert bytes(interrupted.u.mem_read(SYMS['cache'],LAYOUT.eeprom_size))==converted
-    old.save()
-    migrated=Keyboard(bytes(old.u.mem_read(0x79000,0x5000)))
-    assert migrated.call('sn34_eeprom_version')==3
-    assert migrated.call('dynamic_keymap_get_keycode',0,r,c)==expected['A_keycode']
-    assert migrated.raw_command(bytes((0xa9,0x10)))[2]==expected['profile']
-    assert not migrated.call('sn34_eeprom_dirty')
-    for key in KEYS:
-        row,col=key['matrix'];at=LAYOUT.eeprom_base+LAYOUT.he['calibration_offset']+(row*16+col)*3
-        packed=int.from_bytes(previous[at:at+3],'little')
-        reply=migrated.raw_command(bytes((0xa9,0x42,row,col)))
-        assert struct.unpack_from('<HH',reply,5)==(packed&0xfff,packed>>12),(key['name'],reply.hex())
-    tests.append("All v1 cache bytes and all 67 calibration endpoints survive unchanged; interrupted version-only commits replay safely into v3")
-    v2_fixture=(fixture/'sn34_v2_eeprom.bin').read_bytes()
-    assert hashlib.sha256(v2_fixture).hexdigest()==json.loads((fixture/'sn34_v2_eeprom.json').read_text())['sha256']
-    legacy_v2=Keyboard(v2_fixture)
-    v2_image=bytearray(LAYOUT.app_size)
-    v2_image[LAYOUT.code_limit:LAYOUT.eeprom_end]=(fixture/'sn34_v2_eeprom.bin').read_bytes()
-    v2=max(read_banks(v2_image),key=lambda record:record['sequence'])['payload']
-    start=LAYOUT.eeprom_base+1
-    expected_v3=v2[:start+1]+v2[start:-1]
-    assert bytes(legacy_v2.u.mem_read(SYMS['cache'],LAYOUT.eeprom_size))==expected_v3
-    legacy_v2.call('eeprom_update_byte',LAYOUT.eeprom_size-1,1)
-    before=bytes(legacy_v2.u.mem_read(SYMS['cache'],LAYOUT.eeprom_size))
-    assert not legacy_v2.call('sn34_eeprom_migrate')
-    assert bytes(legacy_v2.u.mem_read(SYMS['cache'],LAYOUT.eeprom_size))==before
-    assert not legacy_v2.flash
-    legacy_v2.call('eeprom_update_byte',LAYOUT.eeprom_size-1,0)
-    legacy_v2.call('sn34_eeprom_save_step')
-    again=Keyboard(bytes(legacy_v2.u.mem_read(0x79000,0x5000)))
-    assert bytes(again.u.mem_read(SYMS['cache'],LAYOUT.eeprom_size))==expected_v3
-    legacy_v2.save()
-    again=Keyboard(bytes(legacy_v2.u.mem_read(0x79000,0x5000)))
-    assert again.call('sn34_eeprom_version')==3
-    assert bytes(again.u.mem_read(SYMS['cache'],LAYOUT.eeprom_size))==expected_v3
-    tests.append("A real v2 bank migrates calibration/VIA bytes once, survives an interrupted save and reboots as v3")
+    calibration={tuple(key['matrix']):m.raw_command(bytes((0xa9,0x42,*key['matrix'])))[5:9] for key in KEYS}
     fn_before=m.raw_command(bytes((0xa9,0x42,0,0)))[5:9]
     for profile in (1,2,0):
         assert m.raw_command(bytes((0xa9,0x11,profile)))[2]==0
@@ -77,7 +24,9 @@ def main():
     m.save()
     fn_reloaded=Keyboard(bytes(m.u.mem_read(0x79000,0x5000)))
     assert fn_reloaded.raw_command(bytes((0xa9,0x42,0,0)))[5:9]==fn_before
-    tests.append("Profile switching never alters Fn calibration, including cache commit and reboot")
+    for (row,col), expected in calibration.items():
+        assert fn_reloaded.raw_command(bytes((0xa9,0x42,row,col)))[5:9]==expected
+    tests.append("Profile switching and current-format save/reload preserve every Hall calibration endpoint")
     m=Keyboard()
     m.remap("A",5)
     m.u.mem_write(SCRATCH,b"test\0");m.call("dynamic_keymap_macro_set_buffer",0,5,SCRATCH)

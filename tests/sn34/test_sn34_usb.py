@@ -45,7 +45,7 @@ def main():
     assert not {'sn34_diagnostic','native_scan_configure','native_scan_snapshot',
                 'sn34_usb_diagnostics','sn34_flash_validate_application','native_log_calls'} & SYMS.keys()
     tests.append('One shared board table; custom diagnostic and profiling entry points are absent')
-    compat=json.loads((ROOT/"tests/sn34/boards/battle68/fixtures/sn34_v36_compatibility.json").read_text(encoding="utf-8"))
+    compat=json.loads((ROOT/"tests/sn34/boards/battle68/fixtures/board_contract.json").read_text(encoding="utf-8"))
     assert hashlib.sha256(json.dumps(FIRMWARE.rgb_protocol,indent=2).encode()).hexdigest()==compat["rgb_protocol_sha256"]
     vectors=struct.unpack_from("<112I",IMAGE)
     assert vectors[0]==LAYOUT.stack_top and vectors[1]==SYMS["sn34_reset_entry"]

@@ -1,0 +1,8 @@
+{
+  "description": "Stable Battle68 matrix, default calibration, keymap and RGB references, independent of the EEPROM format.",
+  "matrix_sha256": "dce675f5d55567a26975eb35d014d10cc2a4b6a7af9e022921da5e05748750c6",
+  "rgb_protocol_sha256": "e50f9446f350ba4cd4c53b8f877cd46df9fdb77e4e3b05994cdde662372310c2",
+  "default_keymap_values_sha256": "25c26669d443e58569aac32f4f2a632d3cde6d23f6cc53fde24289bf1569d837",
+  "hall_defaults_values_sha256": "03bdb6678b36edc0357179c041f656f2f1cee5ed0d58b2ef56a3dec4962cfd36",
+  "rgb_layout_values_sha256": "6d75cef1ddcc40e860805df619ee5d92d9018b78cb33954348b0fa6352b2d755"
+}

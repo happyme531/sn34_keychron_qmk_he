@@ -4,7 +4,6 @@ import json
 import os
 from pathlib import Path
 import re
-from settings import BATTLE68_EEPROM_MAGIC
 
 ROOT = Path(__file__).resolve().parents[2]
 
@@ -89,10 +88,6 @@ class Firmware:
         self.addresses = {name: s.entry.st_value for name, s in self.symbols.items()}
         self.memory = {name[len('__sn34_'):].lower(): value for name, value in self.addresses.items()
                        if name.startswith('__sn34_')}
-        # Pre-policy Battle68 ELFs accepted v1/v2. Do not infer that ABI for
-        # another keyboard whose ELF predates the explicit legacy bitmap.
-        self.memory.setdefault('eeprom_legacy_versions',
-                               (1 << 1) | (1 << 2) if self.memory['eeprom_magic'] == BATTLE68_EEPROM_MAGIC else 0)
         self.base = self.memory['app_origin']
         if self.base != 0:
             raise ValueError('SN34F280 application must start at User-ROM offset zero')

@@ -1,109 +1,108 @@
-# SN34 / Battle68 QMK fork
+# SN34 QMK firmware
 
-This branch adds a reusable SN34F280 platform and the Battle68 HE keyboard port
-to Keychron QMK. The SONiX SDK is supplied externally.
+This fork of [Keychron QMK](https://github.com/Keychron/qmk_firmware) adds a
+SONiX SN34F280 platform and wired Hall-effect keyboard ports. HE processing
+reuses Keychron's common algorithms; firmware builds use ordinary QMK commands.
 
-- [Build and test](docs/sn34/build.md)
-- [Architecture and migration status](docs/sn34/architecture.md)
+## Keyboards
+
+| QMK target | Hardware | Notes |
+| --- | --- | --- |
+| [`battle68`](keyboards/battle68/readme.md) | 67 Hall switches, RGB and status LEDs | EEPROM format v3; recorded flashing and Launcher import checks |
+| [`langtu/boom68/wired`](keyboards/langtu/boom68/wired/readme.md) | 67 Hall switches, rotary encoder/button and 94 RGB pixels | Wired BOOM68 only; EEPROM format v4; board-specific first installation |
+| `sn34_test` | Synthetic 3x5 matrix | Compile/emulation coverage only; not a physical keyboard |
+
+The physical ports provide adjustable actuation, rapid trigger, HE profiles,
+advanced key actions, RGB Matrix, VIA keymap/macros/RGB configuration,
+Keychron Launcher HE configuration, and
+optional HID joystick/XInput reports. The original keyboards and QMK
+documentation remain in the tree.
+
+The current code has build and offline regression coverage. Earlier hardware
+checks apply to the firmware recorded in [validation notes](docs/sn34/validation.md);
+the latest cleanup has not been flashed as part of those checks.
+
+## Build and test
+
+Build in Linux or WSL with QMK CLI and an ARM GNU toolchain including
+newlib-nano. Optional tools and tests use [uv](https://docs.astral.sh/uv/).
+Supply SONiX SDK 2.1.4, DFP 2.0.4 and CMSIS Core externally; versions and SDK
+provenance are recorded in [dependencies.json](platforms/sn34/dependencies.json).
+
+Put their paths in an ignored repository-root `.sn34-local.mk`:
+
+```make
+SN34_SDK_DIR := ../dependencies/sn34f28x_sdk_2.1.4/SDK/HAL
+SN34_DFP_DIR := ../dependencies/SONiX.SN34F2_DFP.2.0.4/Device/Include
+SN34_CMSIS_DIR := ../dependencies/CMSIS_5
+```
+
+Then, from this checkout:
+
+```sh
+git submodule update --init --depth 1 lib/lufa
+qmk compile -kb battle68 -km default
+qmk compile -kb langtu/boom68/wired -km default
+uv run tests/sn34/run.py --keyboard battle68
+uv run tests/sn34/run.py --keyboard langtu/boom68/wired
+```
+
+There is no separate prepare, generate or object-import command. Different
+targets can share the build directory. See [build instructions](docs/sn34/build.md)
+for dependencies, optional features, USB polling settings and the synthetic target.
+
+## Configure
+
+Export definitions for the exact compiled firmware, then import the resulting
+JSON in VIA or the Keychron Launcher JSON-import page:
+
+```sh
+uv run util/sn34/export.py .build/battle68_default.elf
+uv run util/sn34/export.py .build/langtu_boom68_wired_default.elf --keyboard langtu/boom68/wired
+```
+
+Output goes to `<target>_config/` beside the ELF. Host tools default to
+`battle68`; pass `--keyboard` for another board. Layout names are unrestricted;
+use `--layout <name>` when a keyboard defines several layouts.
+
+The Raw HID tool can inspect or configure a connected board:
+
+```sh
+uv run util/sn34/device.py --keyboard battle68 status
+uv run util/sn34/device.py --keyboard langtu/boom68/wired get --key A
+```
+
+Settings save automatically after five seconds without key activity. Exported
+HE travel units do not establish measured physical millimetres. The optional
+[Launcher compatibility helper](docs/sn34/build.md#optional-launcher-helper)
+addresses the recorded JSON-import macro issue; the live website may change.
+
+## Flash
+
+Read [flashing instructions](docs/sn34/flashing.md) and the selected keyboard's
+notes before installation. The independent path requires a SonixFlasherC build
+with the SN34 fixes; the flasher and official updater EXEs are external.
+
+After configuring `SN34_FLASHER`, a compatible firmware already running on the
+keyboard can be upgraded with `qmk flash`. The workflow backs up current
+settings, builds a complete application image and verifies settings after reboot.
+BOOM68's first installation from OEM V1.10 uses a different ISP handoff.
+
+**The QMK executable-only BIN is not the complete flashable application.** Use
+the host tools to include settings banks and the retained bootloader footer.
+Only the selected board's current EEPROM format is accepted; older formats
+are not converted. First installation or an incompatible settings format
+requires `--reset-settings` and subsequent reconfiguration.
+
+## Development
+
+- [Build, tools and tests](docs/sn34/build.md)
+- [Flashing and recovery](docs/sn34/flashing.md)
+- [Architecture and upstream integration](docs/sn34/architecture.md)
 - [Add another keyboard](docs/sn34/porting.md)
+- [Validation scope and dated hardware records](docs/sn34/validation.md)
+- [QMK contributing guidelines](docs/contributing.md)
 
-`sn34_test` is a synthetic test target. The final refactor image still needs
-physical keyboard validation. The upstream Keychron documentation follows.
-
-# Keychron QMK Firmware
-
-[![Star this repo](https://img.shields.io/github/stars/Keychron/qmk_firmware?style=social&label=Star%20this%20repo)](https://github.com/Keychron/qmk_firmware)
-
-![Keychron Keyboards](https://raw.githubusercontent.com/Keychron/Keychron-Keyboards-Hardware-Design/main/docs/assets/hero-keychron-hardware-design.jpg)
-
-Official QMK firmware for Keychron and Lemokey keyboards. This repository contains the firmware source, build configurations, and keymaps for 63+ boards across the Q, Q HE, Q Max, K HE, K Max, K Pro, V, V Max, C Pro, S, X, and Lemokey series.
-
-## Why Open Source?
-
-Keychron is the first major keyboard brand to fully open-source both its [firmware](https://github.com/Keychron/qmk_firmware) and [hardware design](https://github.com/Keychron/Keychron-Keyboards-Hardware-Design). We believe you should be able to see, verify, and modify every line of code that runs on your keyboard. Open source means full transparency — no black boxes between you and your hardware.
-
-We also want to build something bigger than what any single company can do alone. By opening our firmware to the community, developers and enthusiasts can push what keyboards are capable of — custom keymaps, new features, creative workflows — and those contributions make every Keychron keyboard better for everyone.
-
-## Features
-
-- **Hall Effect magnetic switch support** — adjustable actuation and rapid trigger on HE boards
-- **Wireless connectivity** — Bluetooth 5.1 and 2.4 GHz firmware for wireless models
-- **[Keychron Launcher](https://launcher.keychron.com/)** — remap keys, tune HE settings, and configure lighting from your browser with no setup
-- **RGB Matrix lighting** — per-key RGB effects and customization
-- **Multiple layout variants** — ANSI, ISO, and JIS for every supported board
-- **Full QMK feature set** — layers, tap-dance, combos, macros, encoders, OLED, and more
-
-## Getting Started
-
-### Option A: Use Keychron Launcher (no code required)
-
-If you just want to remap keys, tune Hall Effect settings, or change lighting, you don't need to build firmware:
-
-1. Open [Keychron Launcher](https://launcher.keychron.com/) in a Chromium-based browser such as Google Chrome, Microsoft Edge, Brave, Opera, or Vivaldi
-2. Connect your Keychron keyboard via USB
-3. Remap keys, configure layers, adjust lighting, and fine-tune HE sensitivity — changes apply instantly
-
-Keychron Launcher works out of the box with no JSON import required, and supports features beyond VIA such as Hall Effect actuation point tuning and rapid trigger configuration. Safari and other non-Chromium browsers will not work with Keychron Launcher.
-
-### Option B: Build from source
-
-Set up your build environment and compile custom firmware:
-
-```bash
-python3 -m pip install qmk
-qmk setup Keychron/qmk_firmware
-qmk compile -kb keychron/q1_he/ansi_encoder -km keychron
-qmk flash -kb keychron/q1_he/ansi_encoder -km keychron
-```
-
-More build examples:
-
-```bash
-make keychron/q1_he/ansi_encoder:keychron
-make keychron/k8_pro/ansi/rgb:keychron
-make keychron/v1_max/ansi_encoder:keychron:flash
-```
-
-See the [QMK build environment setup](https://docs.qmk.fm/#/getting_started_build_tools) and [make guide](https://docs.qmk.fm/#/getting_started_make_guide) for details. New to QMK? Start with the [Complete Newbs Guide](https://docs.qmk.fm/#/newbs).
-
-## Supported Keyboards
-
-All board definitions live under [`keyboards/keychron/`](keyboards/keychron/) and [`keyboards/lemokey/`](keyboards/lemokey/).
-
-| Series | Boards | Type |
-|--------|--------|------|
-| **Q HE** | Q1 HE, Q2 HE, Q3 HE, Q4 HE, Q5 HE, Q6 HE, Q12 HE | Hall Effect, wireless |
-| **Q / Q Max** | Q0, Q1 v1/v2, Q1 Max, Q2, Q3, Q4, Q5, Q6, Q7, Q8, Q9, Q9 Plus, Q10, Q11, Q12, Q60, Q65 | Mechanical, various |
-| **K HE** | K2 HE, K4 HE, K6 HE, K8 HE, K10 HE | Hall Effect, wireless |
-| **K Max / K Pro** | K4 Max, K8 Max, K8 Pro, K9 Max | Mechanical, wireless |
-| **V / V Max** | V1, V1 8K, V1 Max, V2, V3, V4, V5, V5 Max, V6, V6 v2, V6 Max, V7, V8, V10 | Mechanical, wired/wireless |
-| **C Pro** | C1 Pro, C1 Pro v2, C1 Pro 8K, C2 Pro, C2 Pro v2, C2 Pro 8K, C3 Pro, C3 Pro 8K | Mechanical, wired |
-| **S / X** | S1, X0 | Mechanical |
-| **Lemokey** | L1 HE, P1 HE, P2 HE | Hall Effect gaming |
-
-Each board folder contains its own `readme.md` with exact build targets, product links, and reset instructions.
-
-## Hardware Design
-
-For PCB files, schematics, and hardware design resources, see the companion repository:
-
-[Keychron-Keyboards-Hardware-Design](https://github.com/Keychron/Keychron-Keyboards-Hardware-Design)
-
-## Community and Support
-
-- **Join the community**  
-  Join the [Keychron Discord](https://discord.com/invite/HAYbRrTsjN) to share builds, ask questions, and help grow the hardware modding community.
-- [Keychron Website](https://www.keychron.com)
-- [Keychron on Reddit](https://www.reddit.com/r/Keychron/)
-- [QMK Discord](https://discord.gg/qmk)
-- [QMK Documentation](https://docs.qmk.fm)
-
-## Contributing
-
-Contributions are welcome — whether it's a new keymap, a bug fix, or documentation improvement. See [`docs/contributing.md`](docs/contributing.md) for guidelines on submitting pull requests.
-
-## License
-
-This project is licensed under the [GNU General Public License v2.0](LICENSE).
-
-This repository tracks the [upstream QMK firmware](https://github.com/qmk/qmk_firmware) with Keychron-specific board definitions and firmware additions.
+The Keychron baseline is recorded in [upstream.json](platforms/sn34/upstream.json).
+This repository uses the [GNU General Public License v2.0](LICENSE), with
+component-specific notices retained in their source files.

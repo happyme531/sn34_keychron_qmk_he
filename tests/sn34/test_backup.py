@@ -94,12 +94,11 @@ class SettingsSnapshots(unittest.TestCase):
         self.assertEqual(read_banks(image, FIRMWARE.memory)[0]['payload'],
                          bytes(calibrating.keyboard.u.mem_read(SYMS['cache'], FIRMWARE.memory['eeprom_size'])))
 
-    def test_v2_full_macro_tail_is_rejected_before_packaging(self):
-        memory = dict(FIRMWARE.memory, eeprom_version=2)
+    def test_other_storage_versions_are_rejected_before_packaging(self):
+        memory = dict(FIRMWARE.memory, eeprom_version=FIRMWARE.memory['eeprom_version'] + 1)
         payload = bytearray(memory['eeprom_size'])
         payload[-2] = 1
-        reason = 'macro buffer' if memory['eeprom_legacy_versions'] & (1 << 2) else 'compatible committed settings bank'
-        with self.assertRaisesRegex(ValueError, reason):
+        with self.assertRaisesRegex(ValueError, 'compatible committed settings bank'):
             preserve_settings(FIRMWARE.application(), snapshot_image(payload, memory), FIRMWARE)
 
     def test_post_flash_verification_detects_a_changed_setting(self):

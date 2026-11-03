@@ -16,7 +16,7 @@ from backup import capture
 from device import Raw
 from firmware import Firmware, keyboard_definition
 from package import preserve_settings
-from settings import read_banks, newest_bank, migrated_payload
+from settings import read_banks, newest_bank
 
 
 def verify_settings(firmware, expected, timeout=15):
@@ -70,7 +70,7 @@ def main():
             raw.close()
     if backup is not None:
         application, preserved = preserve_settings(application, backup, firmware)
-        expected = migrated_payload(newest_bank(read_banks(backup, firmware.memory)), firmware.memory)
+        expected = newest_bank(read_banks(backup, firmware.memory))['payload']
         metadata.update(preserved)
     # Validate the complete image before a flasher can send an OTA request.
     memory = firmware.memory

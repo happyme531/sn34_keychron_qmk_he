@@ -79,7 +79,7 @@ def main():
         assert bytes(m.u.mem_read(0x7dffc,4)) == bytes.fromhex("5555aaaa")
     tests.append(f"Real Flash HAL saves all {HALF-1} data pages and the final commit page, with both zero and FF erase polarity")
     tests.append("No-op save, newest-bank reload, CRC of data and header metadata")
-    tests.append(f"All {HALF*4} interrupted erase/program cases reload the previous complete bank; code, legacy keymap pages and footer are unchanged")
+    tests.append(f"All {HALF*4} interrupted erase/program cases reload the previous complete bank; code, reserved pages and footer are unchanged")
     m = Eeprom(); m.u.mem_write(SCRATCH,bytes(512))
     for offset in (0,0x2000,BASE-1,BASE+1,0x7cfff,0x7d000,0x7d200,0x7de00,0x7e000,0x200000):
         assert m.call("sn34_flash_write_eeprom_page",offset,SCRATCH) == 0xffffffff,hex(offset)

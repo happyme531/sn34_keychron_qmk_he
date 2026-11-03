@@ -9,7 +9,7 @@ import os
 from pathlib import Path
 import struct
 from firmware import Firmware, ROOT, keyboard_definition, keyboard_file
-from settings import read_banks, newest_bank, migrated_payload
+from settings import read_banks, newest_bank
 
 
 def sha(data):return hashlib.sha256(data).hexdigest()
@@ -20,13 +20,12 @@ def preserve_settings(application, previous, firmware):
     records=read_banks(previous,memory)
     if not records:raise ValueError('Backup has no compatible committed settings bank')
     newest=newest_bank(records)
-    migrated_payload(newest, memory)  # Check legacy migration before writing any output.
     result=bytearray(application)
     for record in records:
         bank=record['bank']
         result[bank:bank+memory['eeprom_size']]=record['payload']
         result[bank+memory['eeprom_size']:bank+memory['eeprom_bank_size']]=record['header']
-    # Keep committed banks intact; firmware handles versioned layout migration.
+    # Compatible committed banks are copied intact.
     return bytes(result),{'backup_sha256':sha(previous),'sequence':newest['sequence'],'banks':len(records)}
 
 

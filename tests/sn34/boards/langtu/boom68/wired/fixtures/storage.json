@@ -14,8 +14,6 @@
   "eeprom_magic": "0x42363857",
   "eeprom_commit": "0x4845434d",
   "eeprom_version": 4,
-  "eeprom_legacy_versions": 0,
-  "legacy_keymap_pages": [],
   "footer_page": "0x7de00",
   "footer_address": "0x7dffc",
   "footer_magic": "0xaaaa5555",

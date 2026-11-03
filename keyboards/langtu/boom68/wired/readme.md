@@ -19,16 +19,18 @@ uv run util/sn34/package.py .build/langtu_boom68_wired_default.elf --keyboard la
 已经运行本项目固件时，可在 Windows 使用以下命令，自动备份并验证设置保留：
 
 ```powershell
-uv run util/sn34/flash.py .build/langtu_boom68_wired_default.elf --keyboard langtu/boom68/wired --flasher .build/standalone-flash/windows/sonixflasher.exe
+uv run util/sn34/flash.py .build/langtu_boom68_wired_default.elf --keyboard langtu/boom68/wired --flasher C:/tools/sonixflasher.exe
 ```
 
 首次从原厂 V1.10 切换有区别：原厂跳入 ISP 后保留 `0C45:80B5` 的接口 3，并不重新枚举为 `7210`。原厂设置也不能转换为 QMK 格式。下面是在本机验证过的首次安装步骤，仅连接一把匹配键盘：
 
+将示例中的 `C:/tools/sonixflasher.exe` 替换为自己的兼容刷写器路径。
+
 ```powershell
 uv run util/sn34/flash.py .build/langtu_boom68_wired_default.elf --keyboard langtu/boom68/wired --reset-settings --prepare-only --output-dir .build/boom68-first
 uv run --with hidapi python -c 'import hid; ds=[d for d in hid.enumerate(0x0c45,0x80b5) if d["usage_page"]==0xff67 and d["usage"]==0x61]; assert len(ds)==1; h=hid.device(); h.open_path(ds[0]["path"]); h.send_feature_report(bytes.fromhex("00aa55a55aff0033cc")+bytes(56)); h.close()'
-& .build/standalone-flash/windows/sonixflasher.exe -v 0c45/80b5 --interface 3 -i
-& .build/standalone-flash/windows/sonixflasher.exe -v 0c45/80b5 --interface 3 -o 0 -f .build/boom68-first/application.bin
+& C:/tools/sonixflasher.exe -v 0c45/80b5 --interface 3 -i
+& C:/tools/sonixflasher.exe -v 0c45/80b5 --interface 3 -o 0 -f .build/boom68-first/application.bin
 uv run util/sn34/device.py --keyboard langtu/boom68/wired status
 ```
 
@@ -84,7 +86,7 @@ uv run util/sn34/device.py --keyboard langtu/boom68/wired status
 
 手动校准的最低幅度独立设为 200 个 ADC 计数，区别于 700 的备用行程估计；触底端点按每个键自己的松开值验证，重启后保留。它允许混用不同幅度的轴，不以同一绝对触底电压筛掉小幅度轴。旋钮按压不参与磁轴校准。
 
-EEPROM 使用本板独立 magic 和 v4 格式，旋钮映射采用 QMK 标准存储布局。首次提交前的试验格式已停用；当前 v4 设置可按正常流程备份、保留和验证。不导入 Battle68 或原厂设置。原厂升级器封装可选，模板必须匹配 `board/updater.json` 中的 SHA256，资源 ID 为 4000/4014。
+EEPROM 使用本板独立 magic 和 v4 格式，旋钮映射采用 QMK 标准存储布局。只接受当前 v4 设置，可按正常流程备份、保留和验证；其他版本需要使用 `--reset-settings` 后重新配置。不导入 Battle68 或原厂设置。原厂升级器封装可选，模板必须匹配 `board/updater.json` 中的 SHA256，资源 ID 为 4000/4014。
 
 离线测试覆盖五组选通与稳定等待、ADC 排序/帧发布、全部霍尔按键、混轴小幅度校准及重启恢复、旋钮双向改键、按压消抖、94 像素编码、设置保存，以及 Fn＋P＋Z/X/C 的 Windows/macOS 组合、同时按下、不同释放顺序和媒体事件隔离。尚未测量全键扫描率、完整模拟稳定曲线、灯箱实体排列及冷启动；不承诺原厂宣传的 128 kHz。
 

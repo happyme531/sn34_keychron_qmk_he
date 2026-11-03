@@ -24,7 +24,6 @@ class StorageLayout:
     eeprom_magic: int
     eeprom_commit: int
     eeprom_version: int
-    legacy_keymap_pages: tuple
     footer_page: int
     footer_address: int
     footer_magic: int
@@ -35,7 +34,6 @@ class StorageLayout:
     rgb_core_offset: int
     rgb_value_offset: int
     via_eeprom_date: str
-    eeprom_legacy_versions: int = 0
 
     @property
     def stack_top(self):
@@ -97,24 +95,7 @@ def read_banks(image, layout=LAYOUT):
         header = bytes(image[bank + layout.eeprom_size:bank + layout.eeprom_bank_size])
         magic, version, sequence, size, crc, commit, header_crc = HEADER.unpack_from(header)
         if ((magic, size, commit) == (layout.eeprom_magic, layout.eeprom_size, layout.eeprom_commit)
-                and (version == layout.eeprom_version or
-                     (version < 32 and layout.eeprom_legacy_versions & (1 << version)))
+                and version == layout.eeprom_version
                 and zlib.crc32(payload) == crc and zlib.crc32(header[:HEADER.size - 4]) == header_crc):
             records.append({"bank": bank, "sequence": sequence, "version": version, "payload": payload, "header": header})
     return records
-
-
-def normalize_via_tag(payload, layout=LAYOUT):
-    """Keep valid old VIA data while replacing its former build-date tag."""
-    offset=layout.via_magic_offset
-    previous=bytes(payload[offset:offset+3])
-    # An invalid/erased VIA tag means the firmware intended a reset. Do not
-    # accidentally turn that state back into a valid old keymap/macro buffer.
-    if len(previous)!=3:
-        raise ValueError("Missing VIA compatibility tag")
-    try:
-        datetime.strptime("20"+previous.hex(), "%Y%m%d")
-    except ValueError as exc:
-        raise ValueError("Backup VIA data is invalid or explicitly marked for reset") from exc
-    payload[offset:offset+3]=layout.via_magic
-    return previous

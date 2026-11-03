@@ -25,7 +25,7 @@ IMAGE=FIRMWARE.code
 SYMS=FIRMWARE.addresses
 BASE=FIRMWARE.base
 for name in ('app_origin','app_size','page_size','boot_user_offset','eeprom_bank_size','eeprom_size',
-             'eeprom_base','eeprom_magic','eeprom_commit','eeprom_version','eeprom_legacy_versions','footer_page','footer_address',
+             'eeprom_base','eeprom_magic','eeprom_commit','eeprom_version','footer_page','footer_address',
              'footer_magic','ram_origin','ram_size','bss_limit','code_limit','stack_top','eeprom_end'):
     assert FIRMWARE.memory[name]==getattr(LAYOUT,name),name
 assert [FIRMWARE.memory['eeprom_bank0'],FIRMWARE.memory['eeprom_bank1']]==list(LAYOUT.eeprom_banks)

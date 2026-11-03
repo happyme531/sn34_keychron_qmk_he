@@ -5,7 +5,6 @@
 #include "sn34_he.h"
 #include "sn34_adc_mux.h"
 #include "sn34_board.h"
-#include "sn34_eeprom.h"
 #include "sn34.h"
 #include "sn34_bootloader.h"
 #include "hall_curve.inc"
@@ -38,7 +37,6 @@ static uint32_t last_frame;
 static uint16_t scan_depth;
 
 void matrix_setup(void) {
-    if (!sn34_eeprom_migrate()) sn34_bootloader_enter();
     sn34_he_calibration_init();
     if (native_scan_init()) sn34_bootloader_enter();
 }

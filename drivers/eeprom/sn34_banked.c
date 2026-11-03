@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 // QMK EEPROM cache, saved to two banks from the board storage contract. Each
-// commit page is written last. Boot, footer and legacy keymap pages are excluded.
+// commit page is written last. Writes stay within the reserved settings banks.
 #include "quantum.h"
 #include "eeprom.h"
 #include "sn34_eeprom.h"
@@ -31,9 +31,7 @@ static uint32_t crc32(const void *source, unsigned size) {
 }
 static bool valid(unsigned bank) {
     const header_t *h = (const header_t *)(banks[bank] + EEPROM_SIZE);
-    bool supported = h->version == FORMAT_VERSION ||
-        (h->version < 32 && (SN34_EEPROM_LEGACY_VERSIONS & (1u << h->version)));
-    return h->magic == MAGIC && supported && h->size == EEPROM_SIZE && h->commit == COMMIT &&
+    return h->magic == MAGIC && h->version == FORMAT_VERSION && h->size == EEPROM_SIZE && h->commit == COMMIT &&
            h->header_crc == crc32(h, offsetof(header_t, header_crc)) &&
            h->crc == crc32((const void *)banks[bank], EEPROM_SIZE);
 }
@@ -51,7 +49,6 @@ void sn34_eeprom_init(void) {
     if (current >= 0) {
         memcpy(cache, (const void *)banks[current], sizeof(cache));
         sequence = ((const header_t *)(banks[current] + EEPROM_SIZE))->sequence;
-        cached_dirty = sn34_eeprom_version() != FORMAT_VERSION;
     }
 
 }
@@ -81,10 +78,6 @@ void eeprom_driver_erase(void) {
 }
 void eeprom_driver_format(bool erase) { (void)erase; eeprom_driver_erase(); }
 bool sn34_eeprom_dirty(void) { return cached_dirty; }
-uint32_t sn34_eeprom_version(void) {
-    return current < 0 ? FORMAT_VERSION : ((const header_t *)(banks[current] + EEPROM_SIZE))->version;
-}
-__attribute__((weak)) bool sn34_eeprom_migrate(void) { return true; }
 
 // This bank-only operation is part of the EEPROM driver, not a chip API.
 __attribute__((noinline)) int sn34_flash_write_eeprom_page(uint32_t user_offset, const void *data) {
@@ -103,7 +96,7 @@ static int save_page(uint32_t offset,const void *data){
 int sn34_eeprom_save_step(void) {
     if (!sn34_eeprom_dirty()) return 0;
     if(staged_bank<0 || staged_revision!=sn34_eeprom_revision){
-        if(current>=0 && sn34_eeprom_version()==FORMAT_VERSION && !memcmp(cache,(const void *)banks[current],sizeof(cache))){cached_dirty=false;staged_bank=-1;return 0;}
+        if(current>=0 && !memcmp(cache,(const void *)banks[current],sizeof(cache))){cached_dirty=false;staged_bank=-1;return 0;}
         memcpy(staged,cache,sizeof(staged));staged_bank=current==0?1:0;staged_page=0;
         staged_revision=sn34_eeprom_revision;
         staged_header=(header_t){.magic=MAGIC,.version=FORMAT_VERSION,.sequence=sequence+1,.size=EEPROM_SIZE,

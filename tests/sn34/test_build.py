@@ -11,7 +11,7 @@ from target import keyboard_name
 from export import definitions
 from firmware import keyboard_definition, keyboard_layout
 from package import wrap_updater, preserve_settings
-from target import ROOT
+from settings import snapshot_image
 
 
 class StandardBuildProducts(unittest.TestCase):
@@ -53,14 +53,13 @@ class StandardBuildProducts(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, 'identity'):
             FIRMWARE.validate_keyboard(other)
 
-    @unittest.skipUnless(keyboard_name() == 'battle68', 'Battle68 compatibility fixture')
-    def test_packaging_copies_legacy_committed_banks_unchanged(self):
+    def test_packaging_copies_current_settings_banks_unchanged(self):
         memory = FIRMWARE.memory
-        banks = (ROOT/'tests/sn34/boards/battle68/fixtures/sn34_v36_eeprom.bin').read_bytes()
-        backup = bytearray(memory['app_size'])
-        backup[memory['code_limit']:memory['eeprom_end']] = banks
+        payload = bytes(range(256)) * (memory['eeprom_size'] // 256)
+        backup = bytearray(snapshot_image(payload, memory))
         image, record = preserve_settings(FIRMWARE.application(), bytes(backup), FIRMWARE)
-        self.assertEqual(image[memory['code_limit']:memory['eeprom_end']], banks)
+        self.assertEqual(image[memory['code_limit']:memory['eeprom_end']],
+                         backup[memory['code_limit']:memory['eeprom_end']])
         self.assertEqual(record['banks'], 1)
         backup[memory['code_limit'] + 17] ^= 1
         with self.assertRaisesRegex(ValueError, 'committed settings bank'):

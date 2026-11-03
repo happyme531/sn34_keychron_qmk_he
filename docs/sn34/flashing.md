@@ -6,11 +6,15 @@ is needed. The retained vendor Bootloader stays installed.
 
 ## Host setup
 
-Build SonixFlasherC from the accompanying modified checkout. Linux/WSL can use
+SonixFlasherC is an external project, not a submodule or bundled executable.
+Use a build containing the SN34 fixes; the dated Battle68 hardware record
+used patch commit `43c6d7432fcca27beeead12bca06b4dbf7a87d15` in the accompanying
+`../SonixFlasherC` checkout. An arbitrary upstream build may lack these fixes.
+Linux/WSL can use
 its normal `make BACKEND=libusb` build, with USB access configured on that host.
 On Windows, use a Windows build with `BACKEND=hidapi` so the keyboard retains
-its normal HID driver. The current workstation's tested executable is
-`.build/standalone-flash/windows/sonixflasher.exe`.
+its normal HID driver. Executable paths below are examples; point them at your
+own compatible build.
 
 Set these optional variables in the ignored `.sn34-local.mk`:
 
@@ -28,8 +32,7 @@ UV := /mnt/c/Users/example/.local/bin/uv.exe
 SN34_FLASHER := C:/tools/sonixflasher.exe
 ```
 
-The existing workstation `.sn34-local.mk` is configured this way. Connect one
-matching keyboard.
+Connect one matching keyboard when flashing.
 BOOM68 wired has a different first-upgrade handoff from OEM V1.10: its ISP
 temporarily retains the application's PID and interface 3. Use the
 [BOOM68 first-install instructions](../../keyboards/langtu/boom68/wired/readme.md#刷写).
@@ -49,7 +52,7 @@ qmk flash -kb battle68 -km default
 Or, after compiling, run the host tool directly in PowerShell:
 
 ```powershell
-uv run util/sn34/flash.py .build/battle68_default.elf --flasher .build/standalone-flash/windows/sonixflasher.exe
+uv run util/sn34/flash.py .build/battle68_default.elf --flasher C:/tools/sonixflasher.exe
 ```
 
 Before any reboot request, the tool checks the ELF identity and memory bounds,
@@ -84,7 +87,7 @@ before requesting reboot when backup is unavailable. Supply a known compatible
 application readback or settings snapshot explicitly:
 
 ```powershell
-uv run util/sn34/flash.py .build/battle68_default.elf --flasher .build/standalone-flash/windows/sonixflasher.exe --settings-backup C:/backups/application-readback.bin
+uv run util/sn34/flash.py .build/battle68_default.elf --flasher C:/tools/sonixflasher.exe --settings-backup C:/backups/application-readback.bin
 ```
 
 This restores the settings at the backup's date; newer edits are not included.
@@ -101,28 +104,18 @@ SonixFlasherC or requesting reboot. With an explicit backup or reset selection,
 preparation does not open USB at all. Without those selections it only reads
 the live snapshot.
 
-## Storage migration
+## Storage format
 
-SN34 v3 reserves a distinct profile byte before the packed calibration array.
-The default layout of other Keychron keyboards is unchanged.
+Settings preservation requires the selected board's current magic, version,
+size and valid CRCs. Battle68 uses v3, BOOM68 wired v4 and `sn34_test` v1.
+The firmware accepts only that current format; incompatible banks initialize
+defaults. Host packaging rejects incompatible backups before reboot.
 
-* v1: every payload byte, including calibration and VIA/macros, stays in place;
-  the ordinary background engine commits a v3 header.
-* v2: calibration and following VIA data move right by one byte in RAM. The
-  previous committed bank remains valid until the background commit finishes.
-  All retained bytes are checked by migration tests, including interrupted saves.
-* v3: the payload is already in the current layout.
-
-v2 overlapped the selected profile with the first Fn calibration byte. That
-already-overwritten byte cannot be reconstructed from a v2 backup. Restore an
-older v1 backup if it contains the desired calibration, or recalibrate Fn.
-Changing profiles in v3 no longer changes its calibration.
-
-v2 also had one extra macro-buffer byte. Migration requires its final two cache
-bytes to be zero, so dropping the last byte cannot truncate a macro or its
-terminator. Packaging rejects a full/unfinished tail before reboot; shorten or
-export/edit those macros in the old firmware first. Firmware repeats the check
-and enters the retained ISP without writing a migrated bank if it fails.
+No older EEPROM format is converted. If the installed firmware uses another
+format, choose `--reset-settings` and reconfigure afterward. Launcher exports
+can help restore user settings, but do not include per-key calibration and are
+not a complete settings backup. Current-format backups are copied intact,
+including their final macro-buffer bytes.
 
 ## Bootloader recovery
 
@@ -132,7 +125,7 @@ against the ISP IDs directly, without an application reboot request:
 
 ```powershell
 uv run util/sn34/flash.py .build/battle68_default.elf --settings-backup C:/backups/settings-backup.bin --prepare-only --output-dir .build/recovery
-& .build/standalone-flash/windows/sonixflasher.exe -v 0c45/7210 -o 0 -f .build/recovery/application.bin
+& C:/tools/sonixflasher.exe -v 0c45/7210 -o 0 -f .build/recovery/application.bin
 ```
 
 This direct command checks the image and ISP checksums, but does not perform
@@ -141,9 +134,10 @@ compiled with `SN34_OTA_ENABLE=no` requires manual ISP entry for later updates.
 
 Windows HID application-to-ISP handoff, independent flashing, application
 reconnect and a second upgrade with automatic backup and full-cache comparison
-have been validated on Battle68. See
-[the hardware record](standalone-flash-hardware.json). Physical typing and a
-cold power cycle of the final firmware remain user checks.
+were validated on the Battle68 firmware identified in
+[the hardware record](standalone-flash-hardware.json). Later source cleanups
+have not been flashed as part of the current offline checks. See
+[validation scope](validation.md) for remaining physical checks.
 
 This retained SN34 ISP returns checksums in erase/program completion ACKs, but
 does not publish a response to standalone command `0x06`. The accompanying
