@@ -60,9 +60,9 @@ __attribute__((flatten, noinline)) static void update_frame(const uint16_t *samp
     }
 }
 
-static bool scan_frame(void) {
+static void scan_frame(void) {
     const uint16_t *samples;
-    if (!native_scan_acquire(&samples, &last_frame)) return false;
+    if (!native_scan_acquire(&samples, &last_frame)) return;
     matrix_row_t before[MATRIX_ROWS];
     memcpy(before, analog_raw_matrix, sizeof(before));
     memset(analog_raw_matrix, 0, sizeof(analog_raw_matrix));
@@ -70,22 +70,26 @@ static bool scan_frame(void) {
     native_scan_release();
     for (unsigned r = 0; r < MATRIX_ROWS; r++) changed_matrix[r] = before[r] ^ analog_raw_matrix[r];
     analog_matrix_task();
-    bool changed = false;
     for (unsigned r = 0; r < MATRIX_ROWS; r++) {
-        matrix_row_t next = raw_matrix[r] & analog_matrix_mask[r];
-        changed |= next != matrix[r];
-        raw_matrix[r] = next;
-        // DKS dispatches its own actions; virtual activity must not dispatch the
-        // physical key's normal keycode a second time through QMK.
-        virtual_matrix[r] = next | okmc_matrix[r] | game_controller_matrix[r];
+        raw_matrix[r] &= analog_matrix_mask[r];
     }
-    return changed;
 }
 
 bool matrix_scan_custom(matrix_row_t current_matrix[]) {
-    (void)current_matrix; // Keychron HE updates the upstream raw_matrix.
     if (scan_depth++) { --scan_depth; return false; }
-    bool changed = scan_frame();
+    scan_frame();
+#ifdef SN34_MATRIX_EXTRA_ENABLE
+    // Keep this an external call across the LTO adapter boundary. A local empty
+    // weak definition can be folded away before the board override is linked.
+    // Digital switches still need scanning when the ADC has no fresh frame.
+    sn34_matrix_scan_extra(current_matrix);
+#endif
+    bool changed = false;
+    for (unsigned r = 0; r < MATRIX_ROWS; r++) {
+        changed |= current_matrix[r] != matrix[r];
+        // DKS dispatches its own actions; do not dispatch the physical key twice.
+        virtual_matrix[r] = current_matrix[r] | okmc_matrix[r] | game_controller_matrix[r];
+    }
     --scan_depth;
     return changed;
 }
@@ -96,6 +100,7 @@ bool sn34_matrix_released(void) {
 }
 
 bool sn34_physical_released(void) {
+    for (unsigned r = 0; r < MATRIX_ROWS; r++) if (matrix[r] & ~analog_matrix_mask[r]) return false;
     for (unsigned i = 0; i < SN34_KEY_COUNT; i++) {
         unsigned slot = board_keys[i].matrix_slot;
         if (analog_matrix_get_travel(slot / MATRIX_COLS, slot % MATRIX_COLS) > TRAVEL_SCALE) return false;

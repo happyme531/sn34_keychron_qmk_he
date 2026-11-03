@@ -13,6 +13,10 @@ def definitions(firmware, keyboard=None):
     keyboard = keyboard or os.environ.get('SN34_KEYBOARD', 'battle68')
     firmware.validate_keyboard(keyboard)
     board = keyboard_definition(keyboard)
+    configurator = json.loads(keyboard_file('board/configurator.json', keyboard).read_text(encoding='utf-8'))
+    encoders = {tuple(item['matrix']):item['index'] for item in configurator.get('encoders', [])}
+    if encoders and 'encoder_map' not in firmware.symbols:
+        raise ValueError('Configured encoders require a compiled encoder map')
     layout = sorted(board['layouts']['LAYOUT']['layout'], key=lambda key: (key['y'], key['x']))
     rows = []
     for y in sorted({key['y'] for key in layout}):
@@ -25,7 +29,10 @@ def definitions(firmware, keyboard=None):
                 config['w'] = key['w']
             if config:
                 row.append(config)
-            row.append(','.join(map(str, key['matrix'])))
+            legend = ','.join(map(str, key['matrix']))
+            if tuple(key['matrix']) in encoders:
+                legend += '\n\n\n\n\n\n\n\n\ne' + str(encoders[tuple(key['matrix'])])
+            row.append(legend)
             cursor = key['x'] + key.get('w', 1)
         rows.append(row)
     menus = []
@@ -43,8 +50,10 @@ def definitions(firmware, keyboard=None):
                menus=menus, keycodes=['qmk_lighting'] if menus else [], firmwareVersion=5)
     keys = [dict(row=key['matrix'][0], col=key['matrix'][1], x=key['x'], y=key['y'],
                  r=0, rx=0, ry=0, d=False, w=key.get('w',1), h=key.get('h',1), color='alpha') for key in layout]
-    labels_path = keyboard_file('board/configurator.json', keyboard)
-    labels = json.loads(labels_path.read_text(encoding='utf-8'))['layers']
+    for key in keys:
+        if (key['row'], key['col']) in encoders:
+            key['ei'] = encoders[key['row'], key['col']]
+    labels = configurator['layers']
     if len(labels) != board['dynamic_keymap']['layer_count']:
         raise ValueError('Configurator labels must match the QMK layer count')
     launcher = dict(name=via['name'], vendorId=via['vendorId'], productId=via['productId'],

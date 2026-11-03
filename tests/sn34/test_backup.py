@@ -58,7 +58,7 @@ class SettingsSnapshots(unittest.TestCase):
         writes = list(keyboard.flash)
         image, metadata = capture(EmulatedRaw(keyboard), FIRMWARE)
         self.assertEqual(read_banks(image, FIRMWARE.memory)[0]['payload'], before)
-        self.assertEqual(read_banks(image, FIRMWARE.memory)[0]['version'], 3)
+        self.assertEqual(read_banks(image, FIRMWARE.memory)[0]['version'], FIRMWARE.memory['eeprom_version'])
         self.assertFalse(metadata['code_backup'])
         self.assertFalse(any(image[:FIRMWARE.memory['code_limit']]))
         self.assertEqual(keyboard.flash, writes)

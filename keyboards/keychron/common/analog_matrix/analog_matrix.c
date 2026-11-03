@@ -346,7 +346,7 @@ static bool calibrate(void) {
                 if (sum) {
                     uint16_t avg = sum/CAL_SAMPL_CNT;
                     // clang-format off
-                    if ((calib_values[r][c].full_travel == 0 && avg < calib_values[r][c].zero_travel - DEFAULT_FULL_RANGE + 100) ||
+                    if ((calib_values[r][c].full_travel == 0 && avg + MANUAL_CALIBRATION_MIN_RANGE < calib_values[r][c].zero_travel) ||
                         (calib_values[r][c].full_travel != 0 && avg + BOTTOM_JITTER < calib_values[r][c].full_travel)) {
                         // clang-format on
                         saved_calib_values[r][c].zero_travel = calib_values[r][c].zero_travel;
@@ -642,7 +642,15 @@ void analog_matrix_eeconfig_init(void) {
             if ((analog_matrix_mask[r] & (0x01U << c)) == 0) continue;
             if (saved_calib_values[r][c].zero_travel > VALID_ANALOG_RAW_VALUE_MAX || saved_calib_values[r][c].zero_travel < DEFAULT_ZERO_TRAVEL_VALUE - 300) saved_calib_values[r][c].zero_travel = DEFAULT_ZERO_TRAVEL_VALUE;
 
-            if (saved_calib_values[r][c].full_travel > DEFAULT_FULL_TRAVEL_VALUE + 400 || saved_calib_values[r][c].full_travel < VALID_ANALOG_RAW_VALUE_MIN) saved_calib_values[r][c].full_travel = saved_calib_values[r][c].zero_travel - DEFAULT_FULL_RANGE;
+#ifdef CALIBRATION_MIN_SAVED_RANGE
+            // A mixed-magnet board validates each saved span against its own
+            // released endpoint, rather than a factory-wide bottom estimate.
+            if (saved_calib_values[r][c].full_travel < VALID_ANALOG_RAW_VALUE_MIN ||
+                saved_calib_values[r][c].full_travel + CALIBRATION_MIN_SAVED_RANGE >= saved_calib_values[r][c].zero_travel)
+#else
+            if (saved_calib_values[r][c].full_travel > DEFAULT_FULL_TRAVEL_VALUE + 400 || saved_calib_values[r][c].full_travel < VALID_ANALOG_RAW_VALUE_MIN)
+#endif
+                saved_calib_values[r][c].full_travel = saved_calib_values[r][c].zero_travel - DEFAULT_FULL_RANGE;
         }
 
     if (calibrated) {

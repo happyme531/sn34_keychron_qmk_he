@@ -43,6 +43,12 @@
 
 #define DEFAULT_FULL_TRAVEL_VALUE (DEFAULT_ZERO_TRAVEL_VALUE - DEFAULT_FULL_RANGE)
 
+// The fallback stroke estimate is not a minimum amplitude for every switch.
+// Boards with mixed magnets may accept smaller, still usable calibrated spans.
+#ifndef MANUAL_CALIBRATION_MIN_RANGE
+#    define MANUAL_CALIBRATION_MIN_RANGE (DEFAULT_FULL_RANGE - 100)
+#endif
+
 #ifndef VALID_ANALOG_RAW_VALUE_MIN
 #    define VALID_ANALOG_RAW_VALUE_MIN 1200
 #endif

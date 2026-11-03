@@ -53,12 +53,12 @@ class PlatformContracts(unittest.TestCase):
 
     def test_firmware_and_host_accept_only_declared_legacy_versions(self):
         memory = FIRMWARE.memory
-        for version in (1, 2, 4, 31):
+        for version in (1, 2, 3, 4, 31):
             with self.subTest(version=version):
                 payload = bytearray(memory['eeprom_size'])
                 payload[0] = 0xa5
                 image = snapshot_image(payload, dict(memory, eeprom_version=version))
-                supported = bool(memory['eeprom_legacy_versions'] & (1 << version))
+                supported = version == memory['eeprom_version'] or bool(memory['eeprom_legacy_versions'] & (1 << version))
                 self.assertEqual(bool(read_banks(image, memory)), supported)
                 keyboard = Keyboard()
                 start = memory['code_limit']

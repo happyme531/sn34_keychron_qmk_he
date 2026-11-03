@@ -30,6 +30,11 @@ SN34_FLASHER := C:/tools/sonixflasher.exe
 
 The existing workstation `.sn34-local.mk` is configured this way. Connect one
 matching keyboard.
+BOOM68 wired has a different first-upgrade handoff from OEM V1.10: its ISP
+temporarily retains the application's PID and interface 3. Use the
+[BOOM68 first-install instructions](../../keyboards/langtu/boom68/wired/readme.md#刷写).
+Once QMK is installed, its normal `7210` reconnect and settings-preserving
+upgrade path have been verified on that board as well.
 The flasher selects the application OTA HID interface by Usage `ff67/61`;
 the snapshot uses the separate QMK Raw HID interface `ff60/61`.
 

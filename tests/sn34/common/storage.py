@@ -85,7 +85,7 @@ def load_storage(path=None):
 
 
 LEGACY_LAYOUT = load_storage()
-LAYOUT = replace(LEGACY_LAYOUT, eeprom_version=3)
+LAYOUT = replace(LEGACY_LAYOUT, eeprom_version=max(3, LEGACY_LAYOUT.eeprom_version))
 
 
 def read_banks(image, layout=LAYOUT):
@@ -97,7 +97,7 @@ def read_banks(image, layout=LAYOUT):
         header = bytes(image[bank + layout.eeprom_size:bank + layout.eeprom_bank_size])
         magic, version, sequence, size, crc, commit, header_crc = HEADER.unpack_from(header)
         if ((magic, size, commit) == (layout.eeprom_magic, layout.eeprom_size, layout.eeprom_commit)
-                and version in (1, 2, 3) and version <= layout.eeprom_version
+                and version in (1, 2, 3, 4) and version <= layout.eeprom_version
                 and zlib.crc32(payload) == crc and zlib.crc32(header[:HEADER.size - 4]) == header_crc):
             records.append({"bank": bank, "sequence": sequence, "version": version, "payload": payload, "header": header})
     return records

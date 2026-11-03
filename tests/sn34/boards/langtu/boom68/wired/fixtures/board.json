@@ -1,0 +1,1340 @@
+{
+  "schema_version": 2,
+  "matrix": {
+    "abi_version": 1,
+    "abi_sha256": "77f5056bdca21c039064d72af88ca82afb93fd9133307251df50c1f5474492f2"
+  },
+  "roles": {
+    "fn": 74,
+    "win": 65,
+    "left_alt": 66,
+    "profile_trigger": 26,
+    "profile_1": 50,
+    "profile_2": 51,
+    "profile_3": 52
+  },
+  "provenance": {
+    "wiring": "BOOM68-USB V1.10; OEM lookup 0x1358c, ADC IRQ 0x6d4, selector 0x413c/0x5568",
+    "hall_defaults": "OEM nominal 2200/1500, NOT measured; calibrate before use",
+    "led_order": "OEM lookup 0x14edc; light-box compositor 0xdfe8 / table 0x151db",
+    "stock_sha256": "4d44b59daeef15271826043715ff5126324c4d84bf19c6407de0511398a86f25"
+  },
+  "keys": [
+    {
+      "layout_index": 0,
+      "hid_usage": "0x29",
+      "raw_slot": 0,
+      "matrix": [
+        1,
+        0
+      ],
+      "hall": {
+        "released": 2200,
+        "bottom": 1500
+      }
+    },
+    {
+      "layout_index": 32,
+      "hid_usage": "0x2b",
+      "raw_slot": 16,
+      "matrix": [
+        2,
+        0
+      ],
+      "hall": {
+        "released": 2200,
+        "bottom": 1500
+      }
+    },
+    {
+      "layout_index": 34,
+      "hid_usage": "0x1a",
+      "raw_slot": 32,
+      "matrix": [
+        2,
+        2
+      ],
+      "hall": {
+        "released": 2200,
+        "bottom": 1500
+      }
+    },
+    {
+      "layout_index": 64,
+      "hid_usage": "0xe1",
+      "raw_slot": 48,
+      "matrix": [
+        4,
+        0
+      ],
+      "hall": {
+        "released": 2200,
+        "bottom": 1500
+      }
+    },
+    {
+      "layout_index": 80,
+      "hid_usage": "0xe0",
+      "raw_slot": 64,
+      "matrix": [
+        5,
+        0
+      ],
+      "hall": {
+        "released": 2200,
+        "bottom": 1500
+      }
+    },
+    {
+      "layout_index": 17,
+      "hid_usage": "0x1e",
+      "raw_slot": 1,
+      "matrix": [
+        1,
+        1
+      ],
+      "hall": {
+        "released": 2200,
+        "bottom": 1500
+      }
+    },
+    {
+      "layout_index": 33,
+      "hid_usage": "0x14",
+      "raw_slot": 17,
+      "matrix": [
+        2,
+        1
+      ],
+      "hall": {
+        "released": 2200,
+        "bottom": 1500
+      }
+    },
+    {
+      "layout_index": 49,
+      "hid_usage": "0x4",
+      "raw_slot": 33,
+      "matrix": [
+        3,
+        1
+      ],
+      "hall": {
+        "released": 2200,
+        "bottom": 1500
+      }
+    },
+    {
+      "layout_index": 81,
+      "hid_usage": "0xe3",
+      "raw_slot": 65,
+      "matrix": [
+        5,
+        1
+      ],
+      "hall": {
+        "released": 2200,
+        "bottom": 1500
+      }
+    },
+    {
+      "layout_index": 18,
+      "hid_usage": "0x1f",
+      "raw_slot": 2,
+      "matrix": [
+        1,
+        2
+      ],
+      "hall": {
+        "released": 2200,
+        "bottom": 1500
+      }
+    },
+    {
+      "layout_index": 48,
+      "hid_usage": "0x39",
+      "raw_slot": 18,
+      "matrix": [
+        3,
+        0
+      ],
+      "hall": {
+        "released": 2200,
+        "bottom": 1500
+      }
+    },
+    {
+      "layout_index": 50,
+      "hid_usage": "0x16",
+      "raw_slot": 34,
+      "matrix": [
+        3,
+        2
+      ],
+      "hall": {
+        "released": 2200,
+        "bottom": 1500
+      }
+    },
+    {
+      "layout_index": 65,
+      "hid_usage": "0x1d",
+      "raw_slot": 50,
+      "matrix": [
+        4,
+        1
+      ],
+      "hall": {
+        "released": 2200,
+        "bottom": 1500
+      }
+    },
+    {
+      "layout_index": 82,
+      "hid_usage": "0xe2",
+      "raw_slot": 66,
+      "matrix": [
+        5,
+        2
+      ],
+      "hall": {
+        "released": 2200,
+        "bottom": 1500
+      }
+    },
+    {
+      "layout_index": 19,
+      "hid_usage": "0x20",
+      "raw_slot": 3,
+      "matrix": [
+        1,
+        3
+      ],
+      "hall": {
+        "released": 2200,
+        "bottom": 1500
+      }
+    },
+    {
+      "layout_index": 35,
+      "hid_usage": "0x8",
+      "raw_slot": 19,
+      "matrix": [
+        2,
+        3
+      ],
+      "hall": {
+        "released": 2200,
+        "bottom": 1500
+      }
+    },
+    {
+      "layout_index": 51,
+      "hid_usage": "0x7",
+      "raw_slot": 35,
+      "matrix": [
+        3,
+        3
+      ],
+      "hall": {
+        "released": 2200,
+        "bottom": 1500
+      }
+    },
+    {
+      "layout_index": 66,
+      "hid_usage": "0x1b",
+      "raw_slot": 51,
+      "matrix": [
+        4,
+        2
+      ],
+      "hall": {
+        "released": 2200,
+        "bottom": 1500
+      }
+    },
+    {
+      "layout_index": 20,
+      "hid_usage": "0x21",
+      "raw_slot": 4,
+      "matrix": [
+        1,
+        4
+      ],
+      "hall": {
+        "released": 2200,
+        "bottom": 1500
+      }
+    },
+    {
+      "layout_index": 36,
+      "hid_usage": "0x15",
+      "raw_slot": 20,
+      "matrix": [
+        2,
+        4
+      ],
+      "hall": {
+        "released": 2200,
+        "bottom": 1500
+      }
+    },
+    {
+      "layout_index": 52,
+      "hid_usage": "0x9",
+      "raw_slot": 36,
+      "matrix": [
+        3,
+        4
+      ],
+      "hall": {
+        "released": 2200,
+        "bottom": 1500
+      }
+    },
+    {
+      "layout_index": 67,
+      "hid_usage": "0x6",
+      "raw_slot": 52,
+      "matrix": [
+        4,
+        3
+      ],
+      "hall": {
+        "released": 2200,
+        "bottom": 1500
+      }
+    },
+    {
+      "layout_index": 21,
+      "hid_usage": "0x22",
+      "raw_slot": 5,
+      "matrix": [
+        1,
+        5
+      ],
+      "hall": {
+        "released": 2200,
+        "bottom": 1500
+      }
+    },
+    {
+      "layout_index": 37,
+      "hid_usage": "0x17",
+      "raw_slot": 21,
+      "matrix": [
+        2,
+        5
+      ],
+      "hall": {
+        "released": 2200,
+        "bottom": 1500
+      }
+    },
+    {
+      "layout_index": 53,
+      "hid_usage": "0xa",
+      "raw_slot": 37,
+      "matrix": [
+        3,
+        5
+      ],
+      "hall": {
+        "released": 2200,
+        "bottom": 1500
+      }
+    },
+    {
+      "layout_index": 68,
+      "hid_usage": "0x19",
+      "raw_slot": 53,
+      "matrix": [
+        4,
+        4
+      ],
+      "hall": {
+        "released": 2200,
+        "bottom": 1500
+      }
+    },
+    {
+      "layout_index": 22,
+      "hid_usage": "0x23",
+      "raw_slot": 6,
+      "matrix": [
+        1,
+        6
+      ],
+      "hall": {
+        "released": 2200,
+        "bottom": 1500
+      }
+    },
+    {
+      "layout_index": 38,
+      "hid_usage": "0x1c",
+      "raw_slot": 22,
+      "matrix": [
+        2,
+        6
+      ],
+      "hall": {
+        "released": 2200,
+        "bottom": 1500
+      }
+    },
+    {
+      "layout_index": 54,
+      "hid_usage": "0xb",
+      "raw_slot": 38,
+      "matrix": [
+        3,
+        6
+      ],
+      "hall": {
+        "released": 2200,
+        "bottom": 1500
+      }
+    },
+    {
+      "layout_index": 69,
+      "hid_usage": "0x5",
+      "raw_slot": 54,
+      "matrix": [
+        4,
+        5
+      ],
+      "hall": {
+        "released": 2200,
+        "bottom": 1500
+      }
+    },
+    {
+      "layout_index": 83,
+      "hid_usage": "0x2c",
+      "raw_slot": 70,
+      "matrix": [
+        5,
+        3
+      ],
+      "hall": {
+        "released": 2200,
+        "bottom": 1500
+      }
+    },
+    {
+      "layout_index": 23,
+      "hid_usage": "0x24",
+      "raw_slot": 7,
+      "matrix": [
+        1,
+        7
+      ],
+      "hall": {
+        "released": 2200,
+        "bottom": 1500
+      }
+    },
+    {
+      "layout_index": 39,
+      "hid_usage": "0x18",
+      "raw_slot": 23,
+      "matrix": [
+        2,
+        7
+      ],
+      "hall": {
+        "released": 2200,
+        "bottom": 1500
+      }
+    },
+    {
+      "layout_index": 55,
+      "hid_usage": "0xd",
+      "raw_slot": 39,
+      "matrix": [
+        3,
+        7
+      ],
+      "hall": {
+        "released": 2200,
+        "bottom": 1500
+      }
+    },
+    {
+      "layout_index": 70,
+      "hid_usage": "0x11",
+      "raw_slot": 55,
+      "matrix": [
+        4,
+        6
+      ],
+      "hall": {
+        "released": 2200,
+        "bottom": 1500
+      }
+    },
+    {
+      "layout_index": 24,
+      "hid_usage": "0x25",
+      "raw_slot": 8,
+      "matrix": [
+        1,
+        8
+      ],
+      "hall": {
+        "released": 2200,
+        "bottom": 1500
+      }
+    },
+    {
+      "layout_index": 40,
+      "hid_usage": "0xc",
+      "raw_slot": 24,
+      "matrix": [
+        2,
+        8
+      ],
+      "hall": {
+        "released": 2200,
+        "bottom": 1500
+      }
+    },
+    {
+      "layout_index": 56,
+      "hid_usage": "0xe",
+      "raw_slot": 40,
+      "matrix": [
+        3,
+        8
+      ],
+      "hall": {
+        "released": 2200,
+        "bottom": 1500
+      }
+    },
+    {
+      "layout_index": 71,
+      "hid_usage": "0x10",
+      "raw_slot": 56,
+      "matrix": [
+        4,
+        7
+      ],
+      "hall": {
+        "released": 2200,
+        "bottom": 1500
+      }
+    },
+    {
+      "layout_index": 25,
+      "hid_usage": "0x26",
+      "raw_slot": 9,
+      "matrix": [
+        1,
+        9
+      ],
+      "hall": {
+        "released": 2200,
+        "bottom": 1500
+      }
+    },
+    {
+      "layout_index": 41,
+      "hid_usage": "0x12",
+      "raw_slot": 25,
+      "matrix": [
+        2,
+        9
+      ],
+      "hall": {
+        "released": 2200,
+        "bottom": 1500
+      }
+    },
+    {
+      "layout_index": 57,
+      "hid_usage": "0xf",
+      "raw_slot": 41,
+      "matrix": [
+        3,
+        9
+      ],
+      "hall": {
+        "released": 2200,
+        "bottom": 1500
+      }
+    },
+    {
+      "layout_index": 72,
+      "hid_usage": "0x36",
+      "raw_slot": 57,
+      "matrix": [
+        4,
+        8
+      ],
+      "hall": {
+        "released": 2200,
+        "bottom": 1500
+      }
+    },
+    {
+      "layout_index": 84,
+      "hid_usage": "0xe6",
+      "raw_slot": 73,
+      "matrix": [
+        5,
+        4
+      ],
+      "hall": {
+        "released": 2200,
+        "bottom": 1500
+      }
+    },
+    {
+      "layout_index": 26,
+      "hid_usage": "0x27",
+      "raw_slot": 10,
+      "matrix": [
+        1,
+        10
+      ],
+      "hall": {
+        "released": 2200,
+        "bottom": 1500
+      }
+    },
+    {
+      "layout_index": 42,
+      "hid_usage": "0x13",
+      "raw_slot": 26,
+      "matrix": [
+        2,
+        10
+      ],
+      "hall": {
+        "released": 2200,
+        "bottom": 1500
+      }
+    },
+    {
+      "layout_index": 58,
+      "hid_usage": "0x33",
+      "raw_slot": 42,
+      "matrix": [
+        3,
+        10
+      ],
+      "hall": {
+        "released": 2200,
+        "bottom": 1500
+      }
+    },
+    {
+      "layout_index": 73,
+      "hid_usage": "0x37",
+      "raw_slot": 58,
+      "matrix": [
+        4,
+        9
+      ],
+      "hall": {
+        "released": 2200,
+        "bottom": 1500
+      }
+    },
+    {
+      "layout_index": 85,
+      "hid_usage": "0xaf",
+      "raw_slot": 74,
+      "matrix": [
+        0,
+        0
+      ],
+      "hall": {
+        "released": 2200,
+        "bottom": 1500
+      }
+    },
+    {
+      "layout_index": 27,
+      "hid_usage": "0x2d",
+      "raw_slot": 11,
+      "matrix": [
+        1,
+        11
+      ],
+      "hall": {
+        "released": 2200,
+        "bottom": 1500
+      }
+    },
+    {
+      "layout_index": 43,
+      "hid_usage": "0x2f",
+      "raw_slot": 27,
+      "matrix": [
+        2,
+        11
+      ],
+      "hall": {
+        "released": 2200,
+        "bottom": 1500
+      }
+    },
+    {
+      "layout_index": 59,
+      "hid_usage": "0x34",
+      "raw_slot": 43,
+      "matrix": [
+        3,
+        11
+      ],
+      "hall": {
+        "released": 2200,
+        "bottom": 1500
+      }
+    },
+    {
+      "layout_index": 74,
+      "hid_usage": "0x38",
+      "raw_slot": 59,
+      "matrix": [
+        4,
+        10
+      ],
+      "hall": {
+        "released": 2200,
+        "bottom": 1500
+      }
+    },
+    {
+      "layout_index": 87,
+      "hid_usage": "0xe4",
+      "raw_slot": 75,
+      "matrix": [
+        5,
+        6
+      ],
+      "hall": {
+        "released": 2200,
+        "bottom": 1500
+      }
+    },
+    {
+      "layout_index": 28,
+      "hid_usage": "0x2e",
+      "raw_slot": 12,
+      "matrix": [
+        1,
+        12
+      ],
+      "hall": {
+        "released": 2200,
+        "bottom": 1500
+      }
+    },
+    {
+      "layout_index": 44,
+      "hid_usage": "0x30",
+      "raw_slot": 28,
+      "matrix": [
+        2,
+        12
+      ],
+      "hall": {
+        "released": 2200,
+        "bottom": 1500
+      }
+    },
+    {
+      "layout_index": 75,
+      "hid_usage": "0xe5",
+      "raw_slot": 60,
+      "matrix": [
+        4,
+        11
+      ],
+      "hall": {
+        "released": 2200,
+        "bottom": 1500
+      }
+    },
+    {
+      "layout_index": 88,
+      "hid_usage": "0x50",
+      "raw_slot": 76,
+      "matrix": [
+        5,
+        7
+      ],
+      "hall": {
+        "released": 2200,
+        "bottom": 1500
+      }
+    },
+    {
+      "layout_index": 92,
+      "hid_usage": "0x2a",
+      "raw_slot": 13,
+      "matrix": [
+        1,
+        13
+      ],
+      "hall": {
+        "released": 2200,
+        "bottom": 1500
+      }
+    },
+    {
+      "layout_index": 60,
+      "hid_usage": "0x31",
+      "raw_slot": 29,
+      "matrix": [
+        2,
+        13
+      ],
+      "hall": {
+        "released": 2200,
+        "bottom": 1500
+      }
+    },
+    {
+      "layout_index": 76,
+      "hid_usage": "0x28",
+      "raw_slot": 45,
+      "matrix": [
+        3,
+        12
+      ],
+      "hall": {
+        "released": 2200,
+        "bottom": 1500
+      }
+    },
+    {
+      "layout_index": 90,
+      "hid_usage": "0x52",
+      "raw_slot": 61,
+      "matrix": [
+        4,
+        12
+      ],
+      "hall": {
+        "released": 2200,
+        "bottom": 1500
+      }
+    },
+    {
+      "layout_index": 89,
+      "hid_usage": "0x51",
+      "raw_slot": 77,
+      "matrix": [
+        5,
+        8
+      ],
+      "hall": {
+        "released": 2200,
+        "bottom": 1500
+      }
+    },
+    {
+      "layout_index": 106,
+      "hid_usage": "0x4c",
+      "raw_slot": 14,
+      "matrix": [
+        1,
+        14
+      ],
+      "hall": {
+        "released": 2200,
+        "bottom": 1500
+      }
+    },
+    {
+      "layout_index": 105,
+      "hid_usage": "0x4b",
+      "raw_slot": 30,
+      "matrix": [
+        2,
+        14
+      ],
+      "hall": {
+        "released": 2200,
+        "bottom": 1500
+      }
+    },
+    {
+      "layout_index": 108,
+      "hid_usage": "0x4e",
+      "raw_slot": 46,
+      "matrix": [
+        3,
+        13
+      ],
+      "hall": {
+        "released": 2200,
+        "bottom": 1500
+      }
+    },
+    {
+      "layout_index": 91,
+      "hid_usage": "0x4f",
+      "raw_slot": 78,
+      "matrix": [
+        5,
+        9
+      ],
+      "hall": {
+        "released": 2200,
+        "bottom": 1500
+      }
+    }
+  ],
+  "scan": {
+    "sample_count": 80,
+    "phases": [
+      {
+        "samples": [
+          {
+            "slot": 0,
+            "channel": 9
+          },
+          {
+            "slot": 1,
+            "channel": 8
+          },
+          {
+            "slot": 2,
+            "channel": 15
+          },
+          {
+            "slot": 3,
+            "channel": 14
+          },
+          {
+            "slot": 4,
+            "channel": 7
+          },
+          {
+            "slot": 5,
+            "channel": 6
+          },
+          {
+            "slot": 6,
+            "channel": 5
+          },
+          {
+            "slot": 7,
+            "channel": 4
+          },
+          {
+            "slot": 8,
+            "channel": 3
+          },
+          {
+            "slot": 9,
+            "channel": 2
+          },
+          {
+            "slot": 10,
+            "channel": 1
+          },
+          {
+            "slot": 11,
+            "channel": 10
+          },
+          {
+            "slot": 12,
+            "channel": 13
+          },
+          {
+            "slot": 13,
+            "channel": 12
+          },
+          {
+            "slot": 14,
+            "channel": 11
+          },
+          {
+            "slot": 15,
+            "channel": 0
+          }
+        ],
+        "select_low_pins": [
+          [
+            0,
+            13
+          ],
+          [
+            0,
+            14
+          ]
+        ]
+      },
+      {
+        "samples": [
+          {
+            "slot": 16,
+            "channel": 9
+          },
+          {
+            "slot": 17,
+            "channel": 8
+          },
+          {
+            "slot": 18,
+            "channel": 15
+          },
+          {
+            "slot": 19,
+            "channel": 14
+          },
+          {
+            "slot": 20,
+            "channel": 7
+          },
+          {
+            "slot": 21,
+            "channel": 6
+          },
+          {
+            "slot": 22,
+            "channel": 5
+          },
+          {
+            "slot": 23,
+            "channel": 4
+          },
+          {
+            "slot": 24,
+            "channel": 3
+          },
+          {
+            "slot": 25,
+            "channel": 2
+          },
+          {
+            "slot": 26,
+            "channel": 1
+          },
+          {
+            "slot": 27,
+            "channel": 10
+          },
+          {
+            "slot": 28,
+            "channel": 13
+          },
+          {
+            "slot": 29,
+            "channel": 12
+          },
+          {
+            "slot": 30,
+            "channel": 11
+          },
+          {
+            "slot": 31,
+            "channel": 0
+          }
+        ],
+        "select_low_pins": [
+          [
+            0,
+            12
+          ]
+        ]
+      },
+      {
+        "samples": [
+          {
+            "slot": 32,
+            "channel": 9
+          },
+          {
+            "slot": 33,
+            "channel": 8
+          },
+          {
+            "slot": 34,
+            "channel": 15
+          },
+          {
+            "slot": 35,
+            "channel": 14
+          },
+          {
+            "slot": 36,
+            "channel": 7
+          },
+          {
+            "slot": 37,
+            "channel": 6
+          },
+          {
+            "slot": 38,
+            "channel": 5
+          },
+          {
+            "slot": 39,
+            "channel": 4
+          },
+          {
+            "slot": 40,
+            "channel": 3
+          },
+          {
+            "slot": 41,
+            "channel": 2
+          },
+          {
+            "slot": 42,
+            "channel": 1
+          },
+          {
+            "slot": 43,
+            "channel": 10
+          },
+          {
+            "slot": 44,
+            "channel": 13
+          },
+          {
+            "slot": 45,
+            "channel": 12
+          },
+          {
+            "slot": 46,
+            "channel": 11
+          },
+          {
+            "slot": 47,
+            "channel": 0
+          }
+        ],
+        "select_low_pins": [
+          [
+            3,
+            0
+          ]
+        ]
+      },
+      {
+        "samples": [
+          {
+            "slot": 48,
+            "channel": 9
+          },
+          {
+            "slot": 49,
+            "channel": 8
+          },
+          {
+            "slot": 50,
+            "channel": 15
+          },
+          {
+            "slot": 51,
+            "channel": 14
+          },
+          {
+            "slot": 52,
+            "channel": 7
+          },
+          {
+            "slot": 53,
+            "channel": 6
+          },
+          {
+            "slot": 54,
+            "channel": 5
+          },
+          {
+            "slot": 55,
+            "channel": 4
+          },
+          {
+            "slot": 56,
+            "channel": 3
+          },
+          {
+            "slot": 57,
+            "channel": 2
+          },
+          {
+            "slot": 58,
+            "channel": 1
+          },
+          {
+            "slot": 59,
+            "channel": 10
+          },
+          {
+            "slot": 60,
+            "channel": 13
+          },
+          {
+            "slot": 61,
+            "channel": 12
+          },
+          {
+            "slot": 62,
+            "channel": 11
+          },
+          {
+            "slot": 63,
+            "channel": 0
+          }
+        ],
+        "select_low_pins": [
+          [
+            3,
+            1
+          ]
+        ]
+      },
+      {
+        "samples": [
+          {
+            "slot": 64,
+            "channel": 9
+          },
+          {
+            "slot": 65,
+            "channel": 8
+          },
+          {
+            "slot": 66,
+            "channel": 15
+          },
+          {
+            "slot": 67,
+            "channel": 14
+          },
+          {
+            "slot": 68,
+            "channel": 7
+          },
+          {
+            "slot": 69,
+            "channel": 6
+          },
+          {
+            "slot": 70,
+            "channel": 5
+          },
+          {
+            "slot": 71,
+            "channel": 4
+          },
+          {
+            "slot": 72,
+            "channel": 3
+          },
+          {
+            "slot": 73,
+            "channel": 2
+          },
+          {
+            "slot": 74,
+            "channel": 1
+          },
+          {
+            "slot": 75,
+            "channel": 10
+          },
+          {
+            "slot": 76,
+            "channel": 13
+          },
+          {
+            "slot": 77,
+            "channel": 12
+          },
+          {
+            "slot": 78,
+            "channel": 11
+          },
+          {
+            "slot": 79,
+            "channel": 0
+          }
+        ],
+        "select_low_pins": [
+          [
+            0,
+            11
+          ]
+        ]
+      }
+    ],
+    "channel_order": [
+      9,
+      8,
+      15,
+      14,
+      7,
+      6,
+      5,
+      4,
+      3,
+      2,
+      1,
+      10,
+      13,
+      12,
+      11,
+      0
+    ],
+    "initial_sequence": [
+      10,
+      11,
+      9,
+      8,
+      15,
+      14,
+      7,
+      6,
+      5,
+      4,
+      3,
+      2,
+      1,
+      0,
+      13,
+      12,
+      16
+    ],
+    "adc_pre_clock": 5,
+    "power_en_time": 32,
+    "hold_time": 2,
+    "xtest": 8
+  },
+  "hardware": {
+    "clock_hz": 192000000,
+    "gpio_inputs": {
+      "3": 1792
+    },
+    "rgb": {
+      "spi": 1,
+      "dma_channel": 0,
+      "mosi": [
+        1,
+        15
+      ],
+      "enable": [
+        1,
+        4
+      ],
+      "divider": 31
+    }
+  },
+  "layer_labels": [
+    "主层",
+    "Fn",
+    "苹果主层",
+    "苹果 Fn"
+  ]
+}

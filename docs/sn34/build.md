@@ -6,6 +6,7 @@ Use the ordinary QMK build entry point, in Linux or WSL:
 qmk compile -kb battle68 -km default
 qmk compile -kb battle68 -km minimal
 qmk compile -kb sn34_test -km default
+qmk compile -kb langtu/boom68/wired -km default
 ```
 
 Install QMK CLI and an ARM GNU toolchain on PATH. GCC 13.2.1 is the tested
@@ -118,6 +119,7 @@ Tests consume the standard ELF directly, without copying or importing objects:
 uv run tests/sn34/run.py
 uv run tests/sn34/run.py --keymap minimal
 uv run tests/sn34/run.py --keyboard sn34_test
+uv run tests/sn34/run.py --keyboard langtu/boom68/wired
 uv run tests/sn34/run.py --elf /path/to/battle68_default.elf
 ```
 

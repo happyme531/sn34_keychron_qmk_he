@@ -1,0 +1,56 @@
+{
+  "date": "2026-11-03",
+  "keyboard": "langtu/boom68/wired",
+  "status": "USER_CONFIRMED",
+  "compiler": "arm-none-eabi-gcc 13.2.1",
+  "matrix": [6, 16],
+  "hall_keys": 67,
+  "encoder_buttons": 1,
+  "encoder_directions": 2,
+  "rgb_pixels": 94,
+  "settings_version": 4,
+  "offline_checks": [
+    "Five active-low bank selections and all 17 ADC ranks",
+    "At least 8 microseconds of settling before each ADC scan",
+    "Complete frame publication and leased-buffer coherence",
+    "All Hall keys and Fn through HE, QMK and USB reports",
+    "Digital button debounce and scanning without new ADC frames",
+    "Encoder quadrature, bounce rejection, remapping and persistence",
+    "Mixed 300..500-count Hall spans calibrate and survive restart",
+    "All 94 RGB pixels reach SPI in GRB order",
+    "Fn+P+Z/X/C on Windows/macOS without media side effects",
+    "Ordinary keymaps and settings survive save/reload"
+  ],
+  "test_commands": [
+    "uv run tests/sn34/run.py --keyboard langtu/boom68/wired",
+    "uv run tests/sn34/run.py --keyboard battle68",
+    "uv run tests/sn34/run.py --keyboard sn34_test"
+  ],
+  "hardware_checks": {
+    "initial_firmware": "OEM BOOM68-USB V1.10",
+    "initial_isp": "0C45:80B5 interface 3; retains application descriptors",
+    "qmk_isp": "0C45:7210 interface 0",
+    "isp_chip": "SN34F28X",
+    "default_keymap_positions_read": 68,
+    "hall_adc_positions_read": 67,
+    "rgb_settings_roundtrip": true,
+    "encoder_settings_roundtrip": true,
+    "full_settings_cache_preserved_across_upgrade": true,
+    "layer_count_response": "11 04",
+    "user_confirmed": "Calibration and encoder issues resolved; latest firmware working normally"
+  },
+  "settling_measurement": {
+    "wait_us": 8,
+    "pressed_adc_drop_before_after": {
+      "Esc": [506, 973],
+      "Minus": [356, 938],
+      "Delete": [482, 842]
+    }
+  },
+  "launcher_layers": ["主层", "Fn", "苹果主层", "苹果 Fn"],
+  "limits": [
+    "Whole-board scan rate and complete analog settling curve are unmeasured",
+    "Different switch response curves use the normalized OEM axis-1 model; physical millimetres are unmeasured",
+    "Exact light-box geometry and a cold power cycle have not been formally recorded"
+  ]
+}

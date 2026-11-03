@@ -48,6 +48,12 @@ This retained bootloader requires application offset zero; nonzero
 `SN34_APP_ORIGIN` is rejected.
 
 Use normal QMK keyboard hooks for indicators, hotkeys and storage housekeeping.
+For mixed Hall/digital boards, define `SN34_MATRIX_EXTRA_ENABLE` and implement
+`sn34_matrix_scan_extra()` to merge
+debounced digital keys into the raw matrix. It runs even without a fresh ADC
+frame; the Hall mask and calibration table must contain Hall switches only.
+BOOM68 demonstrates active-low bank enables, an encoder button and extra RGB
+pixels: see [its board documentation](../../keyboards/langtu/boom68/wired/readme.md).
 QMK invokes `housekeeping_task_user` separately. The current calibration adapter
 uses the fallback endpoints maintained in `board/keys.inc`.
 New boards accept their current EEPROM version only. Declare any supported

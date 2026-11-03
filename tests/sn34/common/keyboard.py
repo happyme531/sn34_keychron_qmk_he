@@ -29,6 +29,9 @@ class Keyboard(Machine):
         self.real_usb_endpoints=real_usb_endpoints
         self.tick=0;self.complete=True;self.flash=[];self.spi=[];self.spi_done=0;self.rx_lengths={};self.usb_link=[]
         super().__init__()
+        # Pull-up inputs for optional board peripherals (e.g. a rotary button).
+        for port, value in load_board().get('hardware', {}).get('gpio_inputs', {}).items():
+            self.u.mem_write(0x40037004 + int(port) * 0x1000, struct.pack('<I', value))
         # These tests inject complete frames. The dedicated scanner suite runs
         # native_scan_init and the real HAL against its ADC register model.
         self.stub_addresses[SYMS['native_scan_init']&~1]='native_scan_init'
