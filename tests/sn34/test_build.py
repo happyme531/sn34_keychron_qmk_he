@@ -2,12 +2,14 @@
 import sys
 from pathlib import Path
 import unittest
+from unittest.mock import patch
 
 sys.path.insert(0, str(Path(__file__).resolve().parent / 'common'))
 sys.path.insert(0, str(Path(__file__).resolve().parents[2] / 'util/sn34'))
 from emulator import FIRMWARE
 from target import keyboard_name
 from export import definitions
+from firmware import keyboard_definition, keyboard_layout
 from package import wrap_updater, preserve_settings
 from target import ROOT
 
@@ -29,6 +31,18 @@ class StandardBuildProducts(unittest.TestCase):
         self.assertEqual(via['menus'], launcher['menus'])
         self.assertEqual(bool(via['menus']), FIRMWARE.features['rgb'])
         self.assertEqual(via['matrix'], launcher['matrix'])
+
+    def test_export_accepts_a_renamed_layout_and_an_explicit_layout_choice(self):
+        expected = definitions(FIRMWARE)
+        board = keyboard_definition()
+        keys = keyboard_layout(board)
+        board['layouts'] = {'LAYOUT_ansi': {'layout': keys}}
+        with patch('export.keyboard_definition', return_value=board), patch.dict('os.environ', SN34_LAYOUT=''):
+            self.assertEqual(definitions(FIRMWARE), expected)
+            board['layouts']['LAYOUT_iso'] = {'layout': keys}
+            with self.assertRaisesRegex(ValueError, 'Select --layout'):
+                definitions(FIRMWARE)
+            self.assertEqual(definitions(FIRMWARE, layout='LAYOUT_iso'), expected)
 
     def test_wrong_updater_template_is_rejected(self):
         with self.assertRaisesRegex(ValueError, 'template'):

@@ -18,6 +18,45 @@ from settings import BATTLE68_EEPROM_MAGIC, migrated_payload, read_banks, snapsh
 
 
 class PlatformContracts(unittest.TestCase):
+    def test_layout_selection_accepts_names_aliases_and_requires_an_explicit_choice(self):
+        ansi = [{'matrix': [0, 0], 'label': 'ANSI'}]
+        iso = [{'matrix': [0, 1], 'label': 'ISO'}]
+        board = {'layouts': {'LAYOUT_ansi': {'layout': ansi}}}
+        with patch.dict('os.environ', SN34_LAYOUT=''):
+            self.assertEqual(firmware.keyboard_layout(board), ansi)
+            board['layouts']['LAYOUT_iso'] = {'layout': iso}
+            board['layout_aliases'] = {'LAYOUT': 'LAYOUT_ansi'}
+            with self.assertRaisesRegex(ValueError, 'Select --layout'):
+                firmware.keyboard_layout(board)
+            self.assertEqual(firmware.keyboard_layout(board, 'LAYOUT_iso'), iso)
+            self.assertEqual(firmware.keyboard_layout(board, 'LAYOUT'), ansi)
+            with self.assertRaisesRegex(ValueError, 'Select --layout'):
+                firmware.keyboard_layout(board, 'LAYOUT_missing')
+        with patch.dict('os.environ', SN34_LAYOUT='LAYOUT_iso'):
+            self.assertEqual(firmware.keyboard_layout(board), iso)
+
+    def test_usb_power_and_hid_intervals_at_both_speeds(self):
+        usb = firmware.keyboard_definition()['usb']
+        interval = usb.get('polling_interval')
+        high_speed = 4 + interval.bit_length() - 1 if interval else 1
+        keyboard = Keyboard()
+        for callback, expected in (('HAL_PCD_HighSpeedCallback', high_speed),
+                                   ('HAL_PCD_ResetCallback', interval or 1)):
+            keyboard.call(callback, 0)
+            self.assertEqual(keyboard.setup(0x80, 6, 0x0200, 0, 512), 0)
+            descriptor = keyboard.transfers[-1][1]
+            self.assertEqual(descriptor[8], usb.get('max_power', 500) // 2)
+            at, hid, endpoints = 0, False, 0
+            while at < len(descriptor):
+                size, kind = descriptor[at:at + 2]
+                if kind == 4:
+                    hid = descriptor[at + 5] == 3
+                elif kind == 5 and hid:
+                    self.assertEqual(descriptor[at + 6], expected)
+                    endpoints += 1
+                at += size
+            self.assertGreater(endpoints, 0)
+
     def test_stock_he_inherits_common_identity_and_matrix(self):
         board = firmware.keyboard_definition('keychron/q1_he/ansi_encoder')
         parent = json.loads((firmware.ROOT / 'keyboards/keychron/q1_he/info.json').read_text())
@@ -39,16 +78,16 @@ class PlatformContracts(unittest.TestCase):
                 'usb': {'vid': '0x1234'},
                 'matrix_pins': {'rows': [None], 'cols': [None]},
                 'rgb_matrix': {'layout': [{'matrix': [0, 0], 'x': 0, 'y': 0, 'flags': 4}]},
-                'layouts': {'LAYOUT': {'layout': [{'matrix': [0, 0], 'x': 0, 'y': 0}]}}}))
+                'layouts': {'LAYOUT_ansi': {'layout': [{'matrix': [0, 0], 'x': 0, 'y': 0}]}}}))
             (child / 'keyboard.json').write_text(json.dumps({
                 'usb': {'pid': '0x5678'},
-                'layouts': {'LAYOUT': {'layout': [{'label': 'A'}]}}}))
+                'layouts': {'LAYOUT_ansi': {'layout': [{'label': 'A'}]}}}))
             fixture = root / 'measured-board.json'
             fixture.write_text(json.dumps({'matrix': {}, 'keys': [{'matrix': [0, 0], 'raw_slot': 0}]}))
-            with patch.object(firmware, 'ROOT', root), patch.dict('os.environ', SN34_KEYBOARD='example/ansi'):
+            with patch.object(firmware, 'ROOT', root), patch.dict('os.environ', SN34_KEYBOARD='example/ansi', SN34_LAYOUT=''):
                 board = firmware.keyboard_definition('example/ansi')
                 self.assertEqual(board['usb'], {'vid': '0x1234', 'pid': '0x5678'})
-                self.assertEqual(board['layouts']['LAYOUT']['layout'][0],
+                self.assertEqual(board['layouts']['LAYOUT_ansi']['layout'][0],
                                  {'label': 'A', 'matrix': [0, 0], 'x': 0, 'y': 0})
                 self.assertEqual(firmware.keyboard_file('board/configurator.json', 'example/ansi'), resource)
                 measured = model.load_board(fixture)

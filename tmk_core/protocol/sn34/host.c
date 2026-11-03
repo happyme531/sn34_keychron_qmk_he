@@ -7,6 +7,7 @@
 #include "sn34f28x_hal.h"
 #include <stddef.h>
 enum { QUEUE_COUNT=SN34_REPORT_QUEUE_COUNT,REPORT_MAX=32,LOOP_HEADROOM=SN34_REPORT_HEADROOM };
+_Static_assert(LOOP_HEADROOM > 0 && LOOP_HEADROOM < QUEUE_COUNT && QUEUE_COUNT <= UINT16_MAX, "Invalid SN34 report queue capacity/headroom");
 // Endpoint packet capacity can exceed the reports we actually enqueue.
 // Fail the build if an enabled report ever needs a larger queue slot.
 _Static_assert(sizeof(report_keyboard_t) <= REPORT_MAX, "Keyboard report exceeds queue slot");

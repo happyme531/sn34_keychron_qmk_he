@@ -17,6 +17,7 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--keyboard', default='battle68')
     parser.add_argument('--keymap', default='default')
+    parser.add_argument('--layout', help='QMK layout name; required for keyboards with multiple layouts')
     parser.add_argument('--elf', type=Path)
     parser.add_argument('--unit-only', action='store_true')
     args = parser.parse_args()
@@ -25,6 +26,8 @@ def main():
     logs.mkdir(parents=True, exist_ok=True)
     env = {**os.environ, 'SN34_KEYBOARD':args.keyboard, 'SN34_KEYMAP':args.keymap,
            'SN34_ELF':str(elf), 'SN34_NATIVE_BUILD':str(logs)}
+    if args.layout:
+        env['SN34_LAYOUT'] = args.layout
     # Compatibility fixtures describe Battle68; firmware-product tests use the selected ELF.
     units = ['test_compile_contracts.py', 'test_build.py', 'test_host.py', 'test_board_hooks.py', 'test_he_protocol.py', 'test_backup.py', 'test_platform.py']
     if args.keyboard == 'battle68':

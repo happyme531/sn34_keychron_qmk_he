@@ -6,10 +6,10 @@ import argparse
 import json
 import os
 from pathlib import Path
-from firmware import Firmware, keyboard_definition, keyboard_file
+from firmware import Firmware, keyboard_definition, keyboard_file, keyboard_layout
 
 
-def definitions(firmware, keyboard=None):
+def definitions(firmware, keyboard=None, layout=None):
     keyboard = keyboard or os.environ.get('SN34_KEYBOARD', 'battle68')
     firmware.validate_keyboard(keyboard)
     board = keyboard_definition(keyboard)
@@ -17,7 +17,7 @@ def definitions(firmware, keyboard=None):
     encoders = {tuple(item['matrix']):item['index'] for item in configurator.get('encoders', [])}
     if encoders and 'encoder_map' not in firmware.symbols:
         raise ValueError('Configured encoders require a compiled encoder map')
-    layout = sorted(board['layouts']['LAYOUT']['layout'], key=lambda key: (key['y'], key['x']))
+    layout = sorted(keyboard_layout(board, layout), key=lambda key: (key['y'], key['x']))
     rows = []
     for y in sorted({key['y'] for key in layout}):
         row, cursor = [], 0
@@ -69,11 +69,12 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('elf', type=Path)
     parser.add_argument('--keyboard', default='battle68')
+    parser.add_argument('--layout', help='QMK layout name; required for keyboards with multiple layouts')
     parser.add_argument('--output-dir', type=Path)
     args = parser.parse_args()
     firmware = Firmware(args.elf)
     output = args.output_dir or args.elf.parent / (args.elf.stem + '_config')
-    via, launcher = definitions(firmware, args.keyboard)
+    via, launcher = definitions(firmware, args.keyboard, args.layout)
     output.mkdir(parents=True, exist_ok=True)
     for name, value in [('sn34_via.json',via), ('sn34_launcher.json',launcher)]:
         path = output/name

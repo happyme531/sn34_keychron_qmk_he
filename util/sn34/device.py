@@ -12,7 +12,7 @@ import sys
 import time
 import os
 import hid
-from firmware import keyboard_definition
+from firmware import keyboard_definition, keyboard_layout
 
 
 class Raw:
@@ -51,7 +51,7 @@ class Raw:
 
 
 def coordinates(key):
-    mapping=keyboard_definition()['layouts']['LAYOUT']['layout']
+    mapping=keyboard_layout(keyboard_definition())
     if ',' in key:
         position=[int(value) for value in key.split(',')]
         matches=[item for item in mapping if item['matrix']==position]
@@ -96,9 +96,11 @@ def main():
     select=argparse.ArgumentParser(add_help=False,allow_abbrev=False)
     select.add_argument('--keyboard',default=os.environ.get('SN34_KEYBOARD','battle68'))
     select.add_argument('--serial',default=os.environ.get('SN34_DEVICE_SERIAL'))
+    select.add_argument('--layout',default=os.environ.get('SN34_LAYOUT'),help='QMK layout name for key labels')
     selection,remaining=select.parse_known_args()
     os.environ['SN34_KEYBOARD']=selection.keyboard
     if selection.serial:os.environ['SN34_DEVICE_SERIAL']=selection.serial
+    if selection.layout:os.environ['SN34_LAYOUT']=selection.layout
     p=argparse.ArgumentParser(description=__doc__,parents=[select])
     p.add_argument("command",choices=("status","get","set","select","he-set","toggle","clear-advanced","dks","socd","gamepad","controller","curve","calibrate"))
     p.add_argument("--points",type=curve_points,help="Gamepad curve, e.g. 0:0,10:31,30:95,40:127; omit to read")

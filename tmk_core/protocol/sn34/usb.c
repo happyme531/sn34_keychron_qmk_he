@@ -15,6 +15,20 @@
 typedef uint8_t USB_Descriptor_HIDReport_Datatype_t;
 #include "usb_hid_reports.h"
 #include <string.h>
+#ifndef USB_MAX_POWER_CONSUMPTION
+#define USB_MAX_POWER_CONSUMPTION 500
+#endif
+_Static_assert(USB_MAX_POWER_CONSUMPTION >= 0 && USB_MAX_POWER_CONSUMPTION <= 500, "USB power must be in 0..500 mA");
+// The SDK derives the full-speed interval from the high-speed exponent.
+// Explicit millisecond settings must be exactly representable at both speeds.
+#ifdef USB_POLLING_INTERVAL_MS
+_Static_assert(USB_POLLING_INTERVAL_MS >= 1 && USB_POLLING_INTERVAL_MS <= 128 &&
+               !(USB_POLLING_INTERVAL_MS & (USB_POLLING_INTERVAL_MS - 1)), "SN34 USB polling must be a power of two in 1..128 ms");
+#define SN34_HID_POLLING_INTERVAL (4 + __builtin_ctz(USB_POLLING_INTERVAL_MS))
+#else
+// Preserve the existing 8 kHz high-speed / 1 kHz full-speed default.
+#define SN34_HID_POLLING_INTERVAL 1
+#endif
 static USBD_Handle_t device __attribute__((aligned(4)));
 uint8_t native_keyboard_leds;
 static uint8_t last_boot[sizeof(report_keyboard_t)] __attribute__((aligned(4)));
@@ -43,17 +57,17 @@ static HAL_Status_T set_feature(uint8_t idx,uint8_t id,uint8_t *data,uint16_t le
 static USBD_ReportInfo_t reports={.intf_num=SN34_HID_INTERFACES,.GetInputReport_isr_cb=get_input,.SetFeatureReport_isr_cb=set_feature,
     .intf_param={
         {.subclass=1,.protocol=1,.bInEp=1,.InEpNum=1,.in_report_length=8,.out_report_length=1,
-         .report_desc_length=sizeof(KeyboardReport),.report_desc=(uint8_t*)KeyboardReport,.hs_Interval=1},
+         .report_desc_length=sizeof(KeyboardReport),.report_desc=(uint8_t*)KeyboardReport,.hs_Interval=SN34_HID_POLLING_INTERVAL},
 #ifdef SHARED_EP_ENABLE
         {.bInEp=1,.InEpNum=2,.in_report_length=64,.out_report_length=2,
-         .report_desc_length=sizeof(SharedReport),.report_desc=(uint8_t*)SharedReport,.hs_Interval=1},
+         .report_desc_length=sizeof(SharedReport),.report_desc=(uint8_t*)SharedReport,.hs_Interval=SN34_HID_POLLING_INTERVAL},
 #endif
 #if SN34_OTA_ENABLE
         {.feature_report_length=64,
          .report_desc_length=sizeof(ota_report),.report_desc=(uint8_t*)ota_report},
 #endif
         {.bInEp=1,.bOutEp=1,.InEpNum=5,.OutEpNum=5,.in_report_length=32,.out_report_length=32,
-         .report_desc_length=sizeof(RawReport),.report_desc=(uint8_t*)RawReport,.hs_Interval=1}}};
+         .report_desc_length=sizeof(RawReport),.report_desc=(uint8_t*)RawReport,.hs_Interval=SN34_HID_POLLING_INTERVAL}}};
 static USB_DeviceDesc_t device_desc __attribute__((aligned(4)))={18,1,0x0200,0,0,0,64,VENDOR_ID,PRODUCT_ID,DEVICE_VER,
     USBD_IDX_MFC_STR,USBD_IDX_PRODUCT_STR,USBD_IDX_SERIAL_STR,1};
 static uint8_t language_desc[] __attribute__((aligned(4)))={4,3,0x09,0x04},string_buffer[128] __attribute__((aligned(4)));
@@ -64,7 +78,7 @@ static uint8_t *manufacturer(USBD_Speed_t s,uint16_t *n){(void)s;return string(M
 static uint8_t *product(USBD_Speed_t s,uint16_t *n){(void)s;return string(PRODUCT,n);}
 static uint8_t *serial(USBD_Speed_t s,uint16_t *n){(void)s;return string(SERIAL_NUMBER,n);}
 static uint8_t *configuration(USBD_Speed_t s,uint16_t *n){(void)s;return string("QMK keyboard, gamepad and configuration",n);}
-static USBD_Descriptors_t descriptors={.bmAttributes=0,.bMaxPower=0xfa,.GetDeviceDescriptor=get_device,
+static USBD_Descriptors_t descriptors={.bmAttributes=0,.bMaxPower=USB_MAX_POWER_CONSUMPTION / 2,.GetDeviceDescriptor=get_device,
     .GetLangIDStrDescriptor=get_language,.GetManufacturerStrDescriptor=manufacturer,.GetProductStrDescriptor=product,
     .GetSerialStrDescriptor=serial,.GetConfigurationStrDescriptor=configuration};
 static void clocks(void){

@@ -36,6 +36,4 @@
 #define PROF_2_KEY_COL 3
 #define PROF_3_KEY_ROW 4
 #define PROF_3_KEY_COL 4
-#define SN34_REPORT_QUEUE_COUNT 256
-#define SN34_REPORT_HEADROOM 96
 #include "drivers/analog/keychron_he/config.h"

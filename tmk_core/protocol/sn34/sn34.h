@@ -4,6 +4,13 @@
 #include <stdint.h>
 #include "host_driver.h"
 
+#ifndef SN34_REPORT_QUEUE_COUNT
+#define SN34_REPORT_QUEUE_COUNT 256
+#endif
+#ifndef SN34_REPORT_HEADROOM
+#define SN34_REPORT_HEADROOM 96
+#endif
+
 #define SN34_USB_BOOT 0
 #ifdef SHARED_EP_ENABLE
 #define SN34_USB_SHARED 1

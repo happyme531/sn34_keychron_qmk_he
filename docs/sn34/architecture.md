@@ -31,7 +31,7 @@ rewrites tracked sources. External paths are Make variables or `.sn34-local.mk`.
 
 `keyboard.json` owns USB IDs/version, matrix dimensions, layout, LEDs and the
 ordinary QMK RGB animation selection.
-`config.h` owns keyboard behavior, profile hotkeys, report queue capacity and
+`config.h` owns keyboard behavior, profile hotkeys, report queue overrides and
 RGB defaults. The HE adapter supplies overridable actuation defaults;
 ordinary QMK defaults are used for tap timing and the maximum RGB brightness.
 `drivers/analog/sn34.mk` loads the shared scan, cached EEPROM, no-debounce and

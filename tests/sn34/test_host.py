@@ -46,7 +46,7 @@ class HostSelection(unittest.TestCase):
         self.hid = SimpleNamespace(enumerate=Mock(return_value=entries), device=lambda: self.device)
         self.addCleanup(patch.stopall)
         patch.object(device_commands, 'hid', self.hid).start()
-        patch.dict('os.environ', SN34_KEYBOARD='sn34_test', SN34_DEVICE_SERIAL='TWO').start()
+        patch.dict('os.environ', SN34_KEYBOARD='sn34_test', SN34_DEVICE_SERIAL='TWO', SN34_LAYOUT='').start()
 
     def test_identity_and_serial_select_exactly_one_device(self):
         raw = device_commands.Raw()
@@ -70,6 +70,16 @@ class HostSelection(unittest.TestCase):
                 self.assertEqual(result['profile_count'], 3)
                 self.assertEqual(result['firmware'], 'v2.0.0')
         self.assertTrue(all(len(packet) == 32 for packet in self.device.requests))
+
+    def test_get_selects_a_named_layout_from_the_command_line(self):
+        board = device_commands.keyboard_definition()
+        layout = next(iter(board['layouts'].values()))
+        board['layouts'] = {'LAYOUT_ansi': layout, 'LAYOUT_iso': layout}
+        args = ['device.py', 'get', '--key', 'T0', '--layout', 'LAYOUT_iso', '--worker']
+        with patch.object(device_commands, 'keyboard_definition', return_value=board), \
+                patch.object(sys, 'argv', args), contextlib.redirect_stdout(io.StringIO()) as output:
+            device_commands.main()
+        self.assertEqual(json.loads(output.getvalue())['keycode'], '0x0004')
 
     def test_eighth_row_and_last_column_use_the_requested_he_mask(self):
         board = dict(keyboard_name='Eight-row board', usb={'vid': '0xfeed', 'pid': '0x34'},

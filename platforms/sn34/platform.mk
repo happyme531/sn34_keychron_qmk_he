@@ -6,6 +6,9 @@ SN34_ROOT := $(CURDIR)
 SN34_BOARD_DIRS := $(foreach path,$(KEYBOARD_PATHS),$(wildcard $(path)/board))
 SN34_BOARD_CONFIG := $(lastword $(foreach path,$(SN34_BOARD_DIRS),$(wildcard $(path)/board_config.h)))
 $(foreach dep,SN34_SDK_DIR SN34_DFP_DIR SN34_CMSIS_DIR,$(if $($(dep)),,$(error Set $(dep) in the environment or .sn34-local.mk)))
+# QMK prefixes source paths with the target's object directory. Parent segments
+# would escape that directory and share SDK objects between different targets.
+override SN34_SDK_DIR := $(abspath $(SN34_SDK_DIR))
 MCU_FLASH_SIZE := 504
 SN34_LINKER_SCRIPT := $(INTERMEDIATE_OUTPUT)/sn34.ld
 SN34_HID_SOURCE := $(INTERMEDIATE_OUTPUT)/sn34/usbd_hid.c

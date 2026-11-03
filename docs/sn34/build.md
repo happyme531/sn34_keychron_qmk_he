@@ -58,8 +58,16 @@ Default outputs include `.build/battle68_default.elf` and
 `-e BUILD_DIR=/path/to/output` selects another build directory. There is no
 second import directory, build manifest, source-hash gate or configurator
 export in the compile path.
-Use a separate `BUILD_DIR` for each concurrently built SN34 target: the current
-external SDK paths otherwise resolve to shared object/dependency files.
+External SDK source paths are normalized before QMK derives object paths.
+Different SN34 targets can share a `BUILD_DIR`, including concurrent builds;
+their SDK objects and dependency files stay in separate target directories.
+
+USB power follows the normal `usb.max_power` / `USB_MAX_POWER_CONSUMPTION`
+setting (500 mA by default). With no polling override, HID keeps its existing
+8 kHz high-speed / 1 kHz full-speed default. Explicit `usb.polling_interval` /
+`USB_POLLING_INTERVAL_MS` settings accept 1, 2, 4, 8, 16, 32, 64 or 128 ms.
+The SDK converts these exactly between high-speed exponents and full-speed
+milliseconds; other values fail compilation. XInput keeps its own USB interval.
 
 ## Optional tools
 
@@ -77,6 +85,9 @@ Export writes `.build/battle68_default_config/sn34_via.json` and
 tool accepts unique key labels or `row,col` coordinates, and `--serial` selects
 one of multiple attached keyboards. It uses only the standard Raw HID
 interface. Settings save automatically after five seconds without key activity.
+Any single QMK layout name is selected automatically. For keyboards with
+multiple layouts, pass `--layout <name>` to export, device or test commands
+(or set `SN34_LAYOUT`). Layout aliases are accepted as well.
 
 The raw QMK BIN is the executable load image. Create the complete application
 image, including the retained vendor footer, separately:

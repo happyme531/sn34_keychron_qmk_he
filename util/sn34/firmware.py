@@ -67,6 +67,19 @@ def keyboard_definition(keyboard=None):
     return result
 
 
+def keyboard_layout(board, name=None):
+    """Select a maintained layout; require a choice when several are available."""
+    layouts = board.get('layouts', {})
+    name = name or os.environ.get('SN34_LAYOUT')
+    if name:
+        name = board.get('layout_aliases', {}).get(name, name)
+    elif len(layouts) == 1:
+        name = next(iter(layouts))
+    if name not in layouts:
+        raise ValueError('Select --layout from: ' + ', '.join(sorted(layouts)))
+    return layouts[name]['layout']
+
+
 class Firmware:
     def __init__(self, path):
         from elftools.elf.elffile import ELFFile

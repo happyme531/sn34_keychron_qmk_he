@@ -2,7 +2,7 @@
 import hashlib
 import json
 from target import board_directory
-from firmware import keyboard_definition
+from firmware import keyboard_definition, keyboard_layout
 
 def matrix_digest(keys):
     coordinates=sorted([[key['raw_slot'],*key['matrix']] for key in keys])
@@ -12,7 +12,7 @@ def load_board(path=None,metadata=None):
     board=json.loads((path or board_directory()/'board.json').read_text(encoding='utf-8'))
     metadata=metadata or keyboard_definition()
     board['matrix'].update(rows=len(metadata['matrix_pins']['rows']),cols=len(metadata['matrix_pins']['cols']))
-    layout={tuple(key['matrix']):key for key in metadata['layouts']['LAYOUT']['layout']}
+    layout={tuple(key['matrix']):key for key in keyboard_layout(metadata)}
     leds=metadata.get('rgb_matrix',{}).get('layout',[])
     indices={tuple(led['matrix']):i for i,led in enumerate(leds) if 'matrix' in led}
     for key in board['keys']:

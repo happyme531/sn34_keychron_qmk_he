@@ -12,6 +12,8 @@ Maintain these sources directly:
   bare header name so a variant can override it through the board include path.
   Use `1`/`0` for boolean settings read by this checkout's QMK metadata parser,
   including `RGB_MATRIX_DEFAULT_ON`; the C spelling `true` is not recognized there.
+  The USB report queue defaults to 256 slots with 96 reserved for input bursts;
+  override it only when the board needs a different capacity.
 - `profiles.c`: default profile modes and a read-only per-key profile table,
   following the stock Keychron keyboards.
 - `rules.mk`: product features, driver selectors and board sources, followed by
@@ -48,7 +50,7 @@ Run `qmk compile -kb <keyboard> -km default`. No prepare or import command is
 needed. Select RGB, XInput and application OTA through the existing Make flags.
 The current scanner uses ADC0; the WS2812 driver uses SPI1 and DMA1 channel 0.
 Another peripheral topology requires a suitable driver implementation.
-The Launcher adapter requires VIA and Raw HID; NKRO, mouse keys, extra keys and
+The Launcher adapter requires VIA, which enables Raw HID automatically; NKRO, mouse keys, extra keys and
 joystick remain optional. The hot HE scan and shared core use LTO in just those
 two translation units, without enabling LTO across the SDK or all of QMK.
 
@@ -88,6 +90,8 @@ Add independent measured/reference data and a test plan under
 `storage.json` declares the current `eeprom_version` independently of the build
 headers; its optional `eeprom_legacy_versions` bitmap defaults to zero.
 Run `uv run tests/sn34/run.py --keyboard <keyboard>` after compilation.
+Layouts may use normal QMK names such as `LAYOUT_ansi_68`. If more than one
+layout is defined, select one with `--layout <name>` in host tools and tests.
 Changes to sample mapping, persistent coordinates or stored formats need an
 explicit compatibility decision and regression evidence. Offline emulation
 does not establish physical support.
