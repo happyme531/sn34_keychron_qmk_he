@@ -6,12 +6,19 @@ is needed. The retained vendor Bootloader stays installed.
 
 ## Host setup
 
-SonixFlasherC is an external project, not a submodule or bundled executable.
-Use a build containing the SN34 fixes; the dated Battle68 hardware record
-used patch commit `43c6d7432fcca27beeead12bca06b4dbf7a87d15` in the accompanying
-`../SonixFlasherC` checkout. An arbitrary upstream build may lack these fixes.
-Linux/WSL can use
-its normal `make BACKEND=libusb` build, with USB access configured on that host.
+Use the [SN34-enabled SonixFlasherC fork](https://github.com/happyme531/SonixFlasherC).
+It is an external project, not a submodule or bundled executable. Its SN34
+fixes were introduced in `43c6d7432fcca27beeead12bca06b4dbf7a87d15`, the patch
+used by the dated Battle68 hardware record. An arbitrary upstream build may
+lack these fixes.
+
+On Linux/WSL, with libusb development headers and USB access configured:
+
+```sh
+git clone https://github.com/happyme531/SonixFlasherC.git ../SonixFlasherC
+make -C ../SonixFlasherC BACKEND=libusb
+```
+
 On Windows, use a Windows build with `BACKEND=hidapi` so the keyboard retains
 its normal HID driver. Executable paths below are examples; point them at your
 own compatible build.

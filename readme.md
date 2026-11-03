@@ -80,8 +80,9 @@ addresses the recorded JSON-import macro issue; the live website may change.
 ## Flash
 
 Read [flashing instructions](docs/sn34/flashing.md) and the selected keyboard's
-notes before installation. The independent path requires a SonixFlasherC build
-with the SN34 fixes; the flasher and official updater EXEs are external.
+notes before installation. The independent path uses the
+[SN34-enabled SonixFlasherC fork](https://github.com/happyme531/SonixFlasherC).
+Build the flasher separately; the flasher and official updater EXEs are external.
 
 After configuring `SN34_FLASHER`, a compatible firmware already running on the
 keyboard can be upgraded with `qmk flash`. The workflow backs up current
