@@ -1025,6 +1025,10 @@ reject:
     raw_hid_send(data, length);
 }
 
+bool analog_matrix_calibrating(void) {
+    return cali_state != CALIB_OFF;
+}
+
 void analog_matrix_indicator(void) {
 #ifdef RGB_MATRIX_ENABLE
     if (cali_state == CALIB_FULL_TRAVEL_MANUAL) {

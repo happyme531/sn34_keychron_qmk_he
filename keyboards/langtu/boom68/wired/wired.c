@@ -66,6 +66,21 @@ bool process_record_kb(uint16_t keycode, keyrecord_t *record) {
 bool rgb_matrix_indicators_kb(void) {
     if (!rgb_matrix_indicators_user()) return false;
     analog_matrix_indicator();
+    if (analog_matrix_calibrating()) return true;
+
+    // Physical left-to-right order, following the light-box coordinates.
+    static const uint8_t profile_leds[] = {93, 92};
+    static const uint8_t layer_leds[] = {69, 68, 67};
+    uint8_t value = rgb_matrix_get_val();
+    uint8_t profile = profile_get_current_index();
+    uint8_t layer = get_highest_layer(layer_state | default_layer_state);
+    for (uint8_t i = 0; i < ARRAY_SIZE(profile_leds); ++i) {
+        if (profile == i + 1) rgb_matrix_set_color(profile_leds[i], value, value, value);
+    }
+    if (layer >= 1 && layer <= ARRAY_SIZE(layer_leds)) rgb_matrix_set_color(layer_leds[layer - 1], value, value, value);
+    if (host_keyboard_led_state().caps_lock) {
+        rgb_matrix_set_color(g_led_config.matrix_co[3][0], value, value, value);
+    }
     return true;
 }
 #endif
