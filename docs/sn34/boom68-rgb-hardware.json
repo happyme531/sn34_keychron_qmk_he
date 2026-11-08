@@ -1,0 +1,29 @@
+{
+  "date": "2026-11-04",
+  "keyboard": "langtu/boom68/wired",
+  "status": "FLASHED_RAW_HID_VERIFIED_VISUAL_PENDING",
+  "firmware_reported": "v2.0.0 2026-11-04-22:04:58",
+  "source_image_sha256": "9b109f878e571bc92760ea0fbb0bf1bc4ac9cebb0ab026aa678159bc5513efa6",
+  "application_sha256": "a07c4062eca51f9c4c55441b6c84e7c3634c8b4bfc22a25614ae159bcf7ca56e",
+  "upgrade": {"from_storage_version": 4, "to_storage_version": 5, "reset_settings": true},
+  "flash_manifest": ".build/langtu_boom68_wired_default_flash/20261104_221413_856294/manifest.json",
+  "pre_flash_snapshot": ".build/boom68-rgb-v5-hardware/20261104_221413/pre-flash-v4-settings.bin",
+  "post_flash_record": ".build/boom68-rgb-v5-hardware/20261104_221413/rgb-hardware-check.json",
+  "tests": [
+    "SonixFlasherC identified SN34F28X, programmed the complete image and verified its checksum",
+    "Application reconnected as BOOM68W001 and reported storage version 5",
+    "Custom RGB capability, 94 LEDs, two zones and five timeline slots read back correctly",
+    "Default regions read as LEDs 0-66 in zone 1 and LEDs 67-93 in zone 2",
+    "Initial default zone effects read as Launcher IDs 5 and 2 before the demo was written",
+    "Unbound strip pixel color and region writes read back correctly and were restored",
+    "Invalid zone and LED color ranges were rejected",
+    "Demo effect lists, Mix RGB mode 24 and brightness 96 read back correctly",
+    "After Save and a quiet interval, a fresh host handle read the same configuration and captured a complete v5 snapshot"
+  ],
+  "demo_left_active": {"zone1": "solid blue", "zone2": "solid red", "brightness": 96},
+  "limits": [
+    "Physical lighting and key/encoder operation await user confirmation",
+    "Cold power-cycle persistence and live Launcher UI were not tested",
+    "The settings reset requires the user to restore configuration and recalibrate"
+  ]
+}

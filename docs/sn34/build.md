@@ -110,7 +110,9 @@ updater must match `board/updater.json`. Settings preservation checks bank CRCs
 against the compiled ELF's memory bounds and copies committed banks intact.
 Startup compatibility is checked by the separate offline tests, not packaging.
 Only the selected keyboard's current EEPROM version is accepted: Battle68 v3,
-BOOM68 wired v4 and synthetic `sn34_test` v1. Incompatible formats are rejected;
+BOOM68 wired v5 and synthetic `sn34_test` v1. BOOM68 v5 adds a reserved
+custom RGB block; upgrading from v4 requires `--reset-settings` and a fresh
+configuration/calibration. Incompatible formats are rejected;
 there is no payload conversion. Use `--reset-settings` for a first installation
 or incompatible firmware upgrade. An OEM contract is
 only needed when `--updater-template` is selected; ordinary application images

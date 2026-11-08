@@ -114,7 +114,7 @@ the live snapshot.
 ## Storage format
 
 Settings preservation requires the selected board's current magic, version,
-size and valid CRCs. Battle68 uses v3, BOOM68 wired v4 and `sn34_test` v1.
+size and valid CRCs. Battle68 uses v3, BOOM68 wired v5 and `sn34_test` v1.
 The firmware accepts only that current format; incompatible banks initialize
 defaults. Host packaging rejects incompatible backups before reboot.
 

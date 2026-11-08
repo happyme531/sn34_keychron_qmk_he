@@ -17,6 +17,10 @@
 #pragma once
 #include "color.h"
 
+// Platforms with a reduced effect set can keep Launcher's effect IDs stable.
+uint8_t keychron_rgb_effect_to_wire(uint8_t effect);
+uint8_t keychron_rgb_effect_from_wire(uint8_t effect);
+
 enum {
     PER_KEY_RGB_SOLID,
     PER_KEY_RGB_BREATHING,

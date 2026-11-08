@@ -127,7 +127,7 @@ class Firmware:
         result = [dict(wire=0, core=0, name='NONE', label='None')]
         if not self.features['rgb']:
             return result
-        names = {int(wire): name for name, wire in re.findall(r'SN34_RGB_EFFECT\((\w+), (\d+)\)',
+        names = {int(wire): name for name, wire in re.findall(r'SN34_RGB_(?:CUSTOM_)?EFFECT\((\w+), (\d+)\)',
                  (ROOT / 'drivers/analog/keychron_he/rgb_protocol.inc').read_text(encoding='utf-8'))}
         for wire, core in enumerate(self.read_symbol('sn34_rgb_wire_to_core')):
             if not wire or core == 255:

@@ -16,6 +16,15 @@ The Keychron QMK baseline is commit
 | `util/sn34` | Configuration, export, packaging, settings snapshots and flashing |
 | `tests/sn34` | ARM emulation and independent board/reference fixtures |
 
+BOOM68 enables the shared Keychron Per-key RGB and Mix RGB engine with
+`KEYCHRON_RGB_ENABLE`. Its SN34 adapter supplies defaults, initialization and
+Launcher effect-ID translation, including IDs embedded in per-zone timelines.
+By default LEDs 0–66 are in zone 1 and the unbound strip LEDs 67–93 are in
+zone 2. Ordinary RGB modes still cover the whole board; board status indicators
+overlay their assigned pixels. The v5 layout reserves 512 bytes after HE
+configuration for custom RGB before VIA keymaps/encoders/macros, independent
+of whether RGB is compiled in. Other SN34 boards leave this module disabled.
+
 ## Build ownership
 
 `qmk compile` owns the build. The platform adds startup/SDK sources, applies

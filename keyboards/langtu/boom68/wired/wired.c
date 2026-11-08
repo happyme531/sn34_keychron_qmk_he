@@ -43,6 +43,10 @@ bool process_record_kb(uint16_t keycode, keyrecord_t *record) {
     if (consumed_release) return false;
 #endif
     if (!allowed || !process_record_profile(keycode, record)) return false;
+#ifdef KEYCHRON_RGB_ENABLE
+    extern bool process_record_keychron_rgb(uint16_t keycode, keyrecord_t *record);
+    if (!process_record_keychron_rgb(keycode, record)) return false;
+#endif
 #if SN34_PROFILE_HOTKEYS_ENABLE
     if (row < MATRIX_ROWS && col < MATRIX_COLS) {
         matrix_row_t bit = (matrix_row_t)1u << col;

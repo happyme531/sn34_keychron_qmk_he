@@ -14,6 +14,17 @@ include keyboards/keychron/common/analog_matrix/analog_matrix.mk
 SRC += keyboards/keychron/common/nkro.c keyboards/keychron/common/keychron_raw_hid.c
 SN34_HAL_SRC += sn34f28x_hal_adc.c
 EXTRAINCDIRS += drivers/analog/adc_mux drivers/analog/keychron_he keyboards/keychron/common/analog_matrix keyboards/keychron/common
+ifeq ($(strip $(RGB_MATRIX_ENABLE)),yes)
+ifeq ($(strip $(KEYCHRON_RGB_ENABLE)),yes)
+OPT_DEFS += -DKEYCHRON_RGB_ENABLE
+RGB_MATRIX_CUSTOM_KB = yes
+SRC += drivers/analog/keychron_he/rgb.c \
+       keyboards/keychron/common/rgb/keychron_rgb.c \
+       keyboards/keychron/common/rgb/per_key_rgb.c \
+       keyboards/keychron/common/rgb/mixed_rgb.c
+VPATH += keyboards/keychron/common/rgb keyboards/keychron/common/language
+endif
+endif
 # Inline the scan loop through the public HE API, without source inclusion or
 # whole-firmware LTO. Other QMK/SDK translation units retain their normal build.
 $(foreach source,drivers/analog/keychron_he/matrix.c $(ANALOG_MATRX_DIR)/analog_matrix.c,$(eval $(INTERMEDIATE_OUTPUT)/$(source:.c=.o): FILE_SPECIFIC_CFLAGS += -flto))

@@ -34,6 +34,7 @@ class StorageLayout:
     rgb_core_offset: int
     rgb_value_offset: int
     via_eeprom_date: str
+    custom_rgb_size: int = 0
 
     @property
     def stack_top(self):
@@ -49,7 +50,7 @@ class StorageLayout:
 
     @property
     def via_magic_offset(self):
-        return self.eeprom_base + self.he["size"]
+        return self.eeprom_base + self.he["size"] + self.custom_rgb_size
 
     @property
     def via_magic(self):

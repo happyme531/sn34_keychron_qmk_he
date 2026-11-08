@@ -78,6 +78,21 @@ debounced digital keys into the raw matrix. It runs even without a fresh ADC
 frame; the Hall mask and calibration table must contain Hall switches only.
 BOOM68 demonstrates active-low bank enables, an encoder button and extra RGB
 pixels: see [its board documentation](../../keyboards/langtu/boom68/wired/readme.md).
+
+For Keychron Per-key RGB and Mix RGB, set `KEYCHRON_RGB_ENABLE = yes` in
+`rules.mk` and reserve `SN34_CUSTOM_RGB_STORAGE_SIZE` in `board_config.h`.
+The reservation must fit `6 + 4 * RGB_MATRIX_LED_COUNT +
+8 * EFFECT_LAYERS * EFFECTS_PER_LAYER` bytes plus a four-byte initialization
+version; round up as appropriate (BOOM68 uses 512). The reservation also applies
+to builds without RGB so VIA addresses remain stable. Adding it changes the
+storage layout and requires a new EEPROM version and VIA compatibility date.
+Optionally define `SN34_RGB_ZONE2_START` to place that LED and all later LEDs
+in zone 2 by default; otherwise all LEDs start in zone 1. The adapter owns RGB
+initialization in `keyboard_post_init_kb`; boards enabling it should keep their
+post-init work in `keyboard_post_init_user`, or arrange a shared hook before
+overriding it. Call `process_record_keychron_rgb()` after the user hook in
+`process_record_kb` to apply the upstream custom-mode shortcut behavior.
+
 QMK invokes `housekeeping_task_user` separately. The current calibration adapter
 uses the fallback endpoints maintained in `board/keys.inc`.
 Each board accepts only its current EEPROM version. Choose a unique magic and

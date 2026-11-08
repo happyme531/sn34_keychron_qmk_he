@@ -1,5 +1,6 @@
 {
   "tests": [
-    "test_boom68.py"
+    "test_boom68.py",
+    "test_custom_rgb.py"
   ]
 }

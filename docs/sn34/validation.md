@@ -27,6 +27,7 @@ host-only test run skips them.
 | Storage | Current-format bank acceptance, CRC/header checks, save/reload, snapshots and settings-preserving packaging |
 | Flash | Production HAL execution with modeled controller effects, interrupted writes, code/footer boundaries |
 | Board drivers | Battle68 scan/boot references; BOOM68 bank settling, encoder/button and RGB output; synthetic geometry |
+| Custom RGB | BOOM68 Launcher capabilities and effect-ID translation, default key/strip zones, rendered DMA frames, independent timelines, bounds checks and save/reboot |
 
 These tests execute ARM firmware in Unicorn with modeled peripherals. They do
 not measure physical latency, analog settling, electrical noise, Flash endurance
@@ -40,6 +41,17 @@ definitions matched the preceding build. The removed conversion hooks and
 legacy-version linker export were absent from the new ELFs. This run did not
 flash a keyboard.
 
+The 2026-11-04 BOOM68 custom RGB change passed the full BOOM68 offline suite,
+ARM linker contract probes and a stock Keychron Q1 HE ANSI encoder build.
+The custom RGB checks inspect completed SPI/DMA frames, including separate
+key/strip colors and status overlays, and verify that saved per-LED colors,
+zone timelines, keymaps, macros and Hall calibration survive fresh startup.
+Initializing an empty v5 RGB reservation preserves the existing HE/VIA data.
+An additional build with RGB disabled produced the same 3464-byte macro
+capacity; its saved keymap, encoder mapping, macro, HE profile and calibration
+were restored by the RGB-enabled build while initializing the default zones.
+These checks did not flash hardware or validate the live Launcher UI.
+
 ## Dated hardware evidence
 
 The following records apply to their recorded firmware, not automatically to
@@ -52,6 +64,7 @@ original workstation artifacts and are not distributed dependencies.
 | 2026-11-03 | Battle68 | [Independent flashing and automatic upgrade](standalone-flash-hardware.json), including full-cache comparison |
 | 2026-11-03 | Battle68 | [Launcher HE import fix](launcher-import-validation.json), settings preservation and user confirmation |
 | 2026-11-03 | BOOM68 wired | [Board validation](boom68-validation.json), settling measurements, settings/encoder checks and user confirmation |
+| 2026-11-04 | BOOM68 wired | [Custom RGB flashing and protocol checks](boom68-rgb-hardware.json), v4→v5 reset, default 67/27 zones and demo readback; visual confirmation pending |
 
 Whole-board scan-rate measurements, cold-start/power-loss acceptance and
 long-running USB/typing checks remain separate hardware work. BOOM68's exact

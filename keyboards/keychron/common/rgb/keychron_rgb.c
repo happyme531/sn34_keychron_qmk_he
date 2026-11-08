@@ -21,7 +21,7 @@
 #include "eeconfig_kb.h"
 #include "nvm_eeprom_eeconfig_internal.h"
 #include "eeprom.h"
-#include "usb_main.h"
+#include "usb_device_state.h"
 #include "color.h"
 #include "backlit_indicator.h"
 #if defined(LK_WIRELESS_ENABLE) || defined(KC_BLUETOOTH_ENABLE)
@@ -74,6 +74,14 @@ os_indicator_config_t os_ind_cfg;
 
 extern void update_mixed_rgb_effect_count(void);
 
+__attribute__((weak)) uint8_t keychron_rgb_effect_to_wire(uint8_t effect) {
+    return effect;
+}
+
+__attribute__((weak)) uint8_t keychron_rgb_effect_from_wire(uint8_t effect) {
+    return effect;
+}
+
 void eeconfig_reset_custom_rgb(void) {
     os_ind_cfg.disable.raw = 0;
     os_ind_cfg.hsv.s       = 0;
@@ -93,12 +101,14 @@ void eeconfig_reset_custom_rgb(void) {
 
     memset(effect_list, 0, sizeof(effect_list));
 
-    effect_list[0][0].effect = 5;
+    effect_list[0][0].effect = keychron_rgb_effect_from_wire(5);
+    if (effect_list[0][0].effect >= RGB_MATRIX_CUSTOM_MIXED_RGB) effect_list[0][0].effect = RGB_MATRIX_SOLID_COLOR;
     effect_list[0][0].sat    = 255;
     effect_list[0][0].speed  = 127;
     effect_list[0][0].time   = 5000;
 
-    effect_list[1][0].effect = 2;
+    effect_list[1][0].effect = keychron_rgb_effect_from_wire(2);
+    if (effect_list[1][0].effect >= RGB_MATRIX_CUSTOM_MIXED_RGB) effect_list[1][0].effect = RGB_MATRIX_SOLID_COLOR;
     effect_list[1][0].hue    = 0;
     effect_list[1][0].sat    = 255;
     effect_list[1][0].speed  = 127;
@@ -144,7 +154,7 @@ static bool rgb_get_led_count(uint8_t *data) {
 
 static bool rgb_get_led_idx(uint8_t *data) {
     uint8_t row = data[0];
-    if (row > MATRIX_ROWS) return false;
+    if (row >= MATRIX_ROWS) return false;
 
     uint8_t  led_idx[128];
     uint32_t row_mask = 0;
@@ -182,7 +192,7 @@ static bool per_key_rgb_get_led_color(uint8_t *data) {
     uint8_t start = data[0];
     uint8_t count = data[1];
 
-    if (count > 9) return false;
+    if (count > 9 || start + count > RGB_MATRIX_LED_COUNT) return false;
 
     for (uint8_t i = 0; i < count; i++) {
         data[1 + i * 3] = per_key_led[start + i].h;
@@ -197,7 +207,7 @@ static bool per_key_rgb_set_led_color(uint8_t *data) {
     uint8_t start = data[0];
     uint8_t count = data[1];
 
-    if (count > 9) return false;
+    if (count > 9 || start + count > RGB_MATRIX_LED_COUNT) return false;
 
     for (uint8_t i = 0; i < count; i++) {
         per_key_led[start + i].h = data[2 + i * 3];
@@ -245,10 +255,10 @@ static bool mixed_rgb_get_effect_list(uint8_t *data) {
     uint8_t start  = data[1];
     uint8_t count  = data[2];
 
-    if (count > 3 || region > EFFECT_LAYERS || start + count > EFFECTS_PER_LAYER) return false;
+    if (count > 3 || region >= EFFECT_LAYERS || start + count > EFFECTS_PER_LAYER) return false;
 
     for (uint8_t i = 0; i < count; i++) {
-        data[1 + i * EFFECT_DATA_LEN] = effect_list[region][start + i].effect;
+        data[1 + i * EFFECT_DATA_LEN] = keychron_rgb_effect_to_wire(effect_list[region][start + i].effect);
         data[2 + i * EFFECT_DATA_LEN] = effect_list[region][start + i].hue;
         data[3 + i * EFFECT_DATA_LEN] = effect_list[region][start + i].sat;
         data[4 + i * EFFECT_DATA_LEN] = effect_list[region][start + i].speed;
@@ -263,13 +273,13 @@ bool mixed_rgb_set_effect_list(uint8_t *data) {
     uint8_t start  = data[1];
     uint8_t count  = data[2];
 
-    if (count > 3 || region > EFFECT_LAYERS || start + count > EFFECTS_PER_LAYER) return false;
+    if (count > 3 || region >= EFFECT_LAYERS || start + count > EFFECTS_PER_LAYER) return false;
     for (uint8_t i = 0; i < count; i++) {
-        if (data[3 + i * EFFECT_DATA_LEN] >= RGB_MATRIX_CUSTOM_MIXED_RGB) return false;
+        if (keychron_rgb_effect_from_wire(data[3 + i * EFFECT_DATA_LEN]) >= RGB_MATRIX_CUSTOM_MIXED_RGB) return false;
     }
 
     for (uint8_t i = 0; i < count; i++) {
-        effect_list[region][start + i].effect = data[3 + i * EFFECT_DATA_LEN];
+        effect_list[region][start + i].effect = keychron_rgb_effect_from_wire(data[3 + i * EFFECT_DATA_LEN]);
         effect_list[region][start + i].hue    = data[4 + i * EFFECT_DATA_LEN];
         effect_list[region][start + i].sat    = data[5 + i * EFFECT_DATA_LEN];
         effect_list[region][start + i].speed  = data[6 + i * EFFECT_DATA_LEN];
@@ -404,9 +414,9 @@ void kc_rgb_matrix_rx(bool usb, uint8_t *data, uint8_t length) {
 void os_state_indicate(void) {
 #    if defined(RGB_MATRIX_SLEEP) || defined(LED_MATRIX_SLEEP)
 #        if defined(LK_WIRELESS_ENABLE) || defined(KC_BLUETOOTH_ENABLE)
-    if (get_transport() == TRANSPORT_USB && USB_DRIVER.state == USB_SUSPENDED) return;
+    if (get_transport() == TRANSPORT_USB && usb_device_state_get_configure_state() == USB_DEVICE_STATE_SUSPEND) return;
 #        else
-    if (USB_DRIVER.state == USB_SUSPENDED) return;
+    if (usb_device_state_get_configure_state() == USB_DEVICE_STATE_SUSPEND) return;
 #        endif
 #    endif
 
